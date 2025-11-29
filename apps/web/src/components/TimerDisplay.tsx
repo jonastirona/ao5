@@ -30,7 +30,7 @@ export default function TimerDisplay() {
       // @ts-expect-error cleanup attached in store
       if (window.__ao5_cleanup) window.__ao5_cleanup()
     }
-  }, [])
+  }, [init, startListening])
 
   // Timer should be focused when key is held OR when timer is running OR during inspection
   const shouldFocus = isKeyHeld || isTimerRunning || timerState === 'inspection'

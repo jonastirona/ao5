@@ -51,7 +51,7 @@ function SolveRow({ solve, index, onDelete, onPenalty, ao5, ao12, ao100, isOpen,
   }
 
   return (
-    <div className="solve-item-wrapper" ref={rowRef as any}>
+    <div className="solve-item-wrapper" ref={rowRef}>
       <div className="solve-item">
         <div className="solve-left">
           <span className="solve-index">#{index}</span>

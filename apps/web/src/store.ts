@@ -139,7 +139,9 @@ export const useStore = create<StoreState>((set, get) => ({
             currentSessionId = defaultSession.id
         }
       }
-    } catch {}
+    } catch {
+      // Ignore storage errors
+    }
 
     // Ensure at least one session exists
     if (sessions.length === 0) {
@@ -191,7 +193,9 @@ export const useStore = create<StoreState>((set, get) => ({
         if (rawSettings) {
             settings = { ...settings, ...JSON.parse(rawSettings) }
         }
-    } catch {}
+    } catch {
+        // Ignore storage errors
+    }
 
     set({ sessions, currentSessionId, settings })
     
@@ -226,6 +230,7 @@ export const useStore = create<StoreState>((set, get) => ({
           set({ isTimerRunning: false })
         } else if (st === 'inspection') {
              // Ensure inspection UI is shown
+             // This block is intentionally empty as the UI updates are handled by state change
         }
       },
       onTick: (ms: number) => set({ elapsedMs: ms }),
@@ -255,7 +260,9 @@ export const useStore = create<StoreState>((set, get) => ({
         
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify({ sessions: updatedSessions, currentSessionId: state.currentSessionId }))
-        } catch {}
+        } catch {
+          // Ignore storage errors
+        }
 
         // Cloud sync
         void (async () => {
@@ -376,8 +383,8 @@ export const useStore = create<StoreState>((set, get) => ({
     
     // @ts-expect-error cleanup
     window.__ao5_cleanup = () => {
-      window.removeEventListener('keydown', onKeyDown, { capture: true } as any)
-      window.removeEventListener('keyup', onKeyUp, { capture: true } as any)
+      window.removeEventListener('keydown', onKeyDown, { capture: true } as EventListenerOptions)
+      window.removeEventListener('keyup', onKeyUp, { capture: true } as EventListenerOptions)
       set({ listening: false })
     }
   },
@@ -451,7 +458,9 @@ export const useStore = create<StoreState>((set, get) => ({
 
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({ sessions, currentSessionId: newSession.id }))
-      } catch {}
+      } catch {
+        // Ignore storage errors
+      }
   },
 
   addSession: (session: Session) => {
@@ -473,7 +482,9 @@ export const useStore = create<StoreState>((set, get) => ({
 
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({ sessions, currentSessionId: newSession.id }))
-      } catch {}
+      } catch {
+        // Ignore storage errors
+      }
 
       // Sync imported solves to cloud
       void (async () => {
@@ -549,7 +560,9 @@ export const useStore = create<StoreState>((set, get) => ({
       
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({ sessions: state.sessions, currentSessionId: id }))
-      } catch {}
+      } catch {
+        // Ignore storage errors
+      }
   },
 
   deleteSession: (id: string) => {
@@ -569,7 +582,9 @@ export const useStore = create<StoreState>((set, get) => ({
       } else {
            try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify({ sessions: newSessions, currentSessionId: newCurrentId }))
-          } catch {}
+          } catch {
+            // Ignore storage errors
+          }
       }
 
       // Sync delete to cloud
@@ -583,7 +598,9 @@ export const useStore = create<StoreState>((set, get) => ({
       set({ sessions })
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({ sessions, currentSessionId: state.currentSessionId }))
-      } catch {}
+      } catch {
+        // Ignore storage errors
+      }
 
       // Sync update to cloud
       if (session) {
@@ -606,7 +623,9 @@ export const useStore = create<StoreState>((set, get) => ({
     
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ sessions, currentSessionId: state.currentSessionId }))
-    } catch {}
+    } catch {
+      // Ignore storage errors
+    }
 
     void (async () => {
       try {
@@ -643,7 +662,9 @@ export const useStore = create<StoreState>((set, get) => ({
       
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({ sessions, currentSessionId: state.currentSessionId }))
-      } catch {}
+      } catch {
+        // Ignore storage errors
+      }
       
       // TODO: Sync penalty update to cloud
   },
@@ -670,7 +691,7 @@ export const useStore = create<StoreState>((set, get) => ({
         }
     })
 
-    let newSessions = [...state.sessions]
+    const newSessions = [...state.sessions]
     
     // 1. Handle solves with explicit sessionId
     Object.entries(bySession).forEach(([sessionId, solves]) => {
@@ -740,7 +761,9 @@ export const useStore = create<StoreState>((set, get) => ({
     
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ sessions: newSessions, currentSessionId: state.currentSessionId }))
-    } catch {}
+    } catch {
+      // Ignore storage errors
+    }
   },
 
   clearSolves: () => {
@@ -749,7 +772,9 @@ export const useStore = create<StoreState>((set, get) => ({
     set({ sessions, ao5: null, ao12: null, ao100: null, best: null, worst: null })
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ sessions, currentSessionId: state.currentSessionId }))
-    } catch {}
+    } catch {
+      // Ignore storage errors
+    }
   },
   
   currentTheme: (() => {
@@ -763,7 +788,9 @@ export const useStore = create<StoreState>((set, get) => ({
       set({ currentTheme: theme })
       try {
           localStorage.setItem('ao5.theme', theme)
-      } catch {}
+      } catch {
+          // Ignore storage errors
+      }
       
       // Sync to cloud if logged in
       void (async () => {
@@ -772,7 +799,9 @@ export const useStore = create<StoreState>((set, get) => ({
               if (data.session?.user) {
                   await supabase.from('profiles').update({ theme }).eq('id', data.session.user.id)
               }
-          } catch {}
+          } catch {
+              // Ignore sync errors
+          }
       })()
   },
 
@@ -790,7 +819,9 @@ export const useStore = create<StoreState>((set, get) => ({
           
           try {
               localStorage.setItem('ao5.settings', JSON.stringify(settings))
-          } catch {}
+          } catch {
+              // Ignore storage errors
+          }
           
           return { settings }
       })

@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { supabase } from './lib/supabaseClient'
+import type { Session } from '@supabase/supabase-js'
 import { useStore, type SolveEntry } from './store'
 
 // Global flag to prevent multiple initializations
@@ -14,9 +15,10 @@ interface AuthState {
     id: string
     email?: string | null
     created_at?: string
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     user_metadata?: { [key: string]: any }
   } | null
-  session: any
+  session: Session | null
   initializing: boolean
   error: string | null
   // Offline/local solves sync prompt state
@@ -126,7 +128,9 @@ export const useAuth = create<AuthState>((set, get) => ({
     // Clear local solves on logout to avoid cross-account bleed
     try {
       useStore.getState().clearSolves()
-    } catch {}
+    } catch {
+      // Ignore
+    }
   },
 
   hydrateFromCloud: async () => {
@@ -153,6 +157,7 @@ export const useAuth = create<AuthState>((set, get) => ({
         return
       }
       console.log('[auth] get-solves count:', data.length)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mapped: SolveEntry[] = data.map((row: any) => ({
         id: row.id,
         scramble: row.scramble,
@@ -189,6 +194,7 @@ export const useAuth = create<AuthState>((set, get) => ({
       const { data, error } = await supabase.functions.invoke('get-solves')
       if (error) throw error
       if (!Array.isArray(data)) throw new Error('Invalid response from get-solves')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const cloud: SolveEntry[] = data.map((row: any) => ({
         id: row.id,
         scramble: row.scramble,
@@ -322,7 +328,7 @@ supabase.auth.onAuthStateChange(async (event, session) => {
   // If the event explicitly indicates a sign-out, clear local solves.
   if (event === 'SIGNED_OUT') {
     console.log('[auth] Signed out detected, clearing local solves')
-    try { useStore.getState().clearSolves() } catch {}
+    try { useStore.getState().clearSolves() } catch { /* Ignore */ }
   } else {
     console.log('[auth] No user present; not clearing local solves unless SIGNED_OUT')
   }

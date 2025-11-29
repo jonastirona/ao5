@@ -29,6 +29,7 @@ export async function fetchCloudSolves(): Promise<SolveEntry[] | null> {
     const { data, error } = await supabase.functions.invoke('get-solves')
     if (error) return null
     if (!Array.isArray(data)) return null
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return data.map((row: any) => ({
       id: row.id,
       scramble: row.scramble,
@@ -55,6 +56,7 @@ export async function fetchCloudSessions(): Promise<CloudSession[] | null> {
             console.error('[sync] fetchCloudSessions error:', error)
             return null
         }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return data.map((row: any) => ({
             id: row.id,
             name: row.session_name,

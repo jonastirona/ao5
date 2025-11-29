@@ -41,6 +41,7 @@ export default function ScrambleDisplay() {
 
     if (!playerRef.current) {
       playerRef.current = new TwistyPlayer({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         puzzle: (PUZZLE_MAPPING[puzzleType] || '3x3x3') as any,
         visualization: '2D',
         alg: scramble,
@@ -54,6 +55,7 @@ export default function ScrambleDisplay() {
       playerRef.current.style.height = '100%'
       containerRef.current.appendChild(playerRef.current)
     } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       playerRef.current.puzzle = (PUZZLE_MAPPING[puzzleType] || '3x3x3') as any
       playerRef.current.alg = scramble
     }

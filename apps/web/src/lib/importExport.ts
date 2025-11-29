@@ -1,4 +1,5 @@
 import type { SolveEntry, Session } from '../store'
+import type { PuzzleType } from 'core'
 import { v4 as uuidv4 } from 'uuid'
 
 // --- Types for Import/Export ---
@@ -23,7 +24,7 @@ export interface ExportSession {
 
 const mapInternalToExportSolve = (solve: SolveEntry): ExportSolve => {
   let penalty: 'OK' | '+2' | 'DNF' = 'OK'
-  let rawTimeMs = solve.timeMs
+  const rawTimeMs = solve.timeMs
   let timeMs = solve.timeMs
 
   if (solve.penalty === 'plus2') {
@@ -65,7 +66,7 @@ const mapExportToInternalSolve = (solve: ExportSolve, puzzleType: string = '3x3'
     scramble: solve.scramble || '',
     timeMs,
     timestamp: solve.timestamp || Date.now(),
-    puzzleType: puzzleType as any,
+    puzzleType: puzzleType as PuzzleType,
     penalty
   }
 }
@@ -115,7 +116,7 @@ export function parseImport(content: string, fileName: string): Session[] {
     try {
       const json = JSON.parse(content)
       return parseJSONImport(json, fileName)
-    } catch (e) {
+    } catch {
       // Not JSON, continue
     }
   }
@@ -131,6 +132,7 @@ export function parseImport(content: string, fileName: string): Session[] {
   return parseTextImport(content, fileName)
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function parseJSONImport(json: any, fileName: string): Session[] {
   const sessions: Session[] = []
 
@@ -165,12 +167,13 @@ function parseJSONImport(json: any, fileName: string): Session[] {
                     '333fm': '3x3_fm', '444bld': '4x4_bld', '555bld': '5x5_bld', '333mbld': '3x3_mbld'
                 }
                 
-                let puzzleType: any = '3x3'
+                let puzzleType: string = '3x3'
                 const scrType = meta.opt?.scrType
                 if (scrType && csTimerMap[scrType]) {
                     puzzleType = csTimerMap[scrType]
                 }
                 
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const solves: SolveEntry[] = solvesData.map((item: any) => {
                     let penaltyVal, timeVal, scramble, timestampVal
                     
@@ -187,7 +190,7 @@ function parseJSONImport(json: any, fileName: string): Session[] {
                     }
 
                     let penalty: 'plus2' | 'DNF' | null = null
-                    let timeMs = timeVal
+                    const timeMs = timeVal
                     
                     if (penaltyVal === 2000) penalty = 'plus2'
                     if (penaltyVal === -1) penalty = 'DNF'
@@ -197,7 +200,7 @@ function parseJSONImport(json: any, fileName: string): Session[] {
                         scramble: scramble || '',
                         timeMs,
                         timestamp: timestampVal ? timestampVal * 1000 : Date.now(),
-                        puzzleType: puzzleType,
+                        puzzleType: puzzleType as PuzzleType,
                         penalty
                     }
                 })
@@ -205,7 +208,7 @@ function parseJSONImport(json: any, fileName: string): Session[] {
                 sessions.push({
                     id: uuidv4(),
                     name: `csTimer Session ${meta.name || key}`,
-                    puzzleType,
+                    puzzleType: puzzleType as PuzzleType,
                     solves
                 })
             }
@@ -223,6 +226,7 @@ function parseJSONImport(json: any, fileName: string): Session[] {
       if (key.startsWith('session')) {
         const solvesData = json[key]
         if (Array.isArray(solvesData) && solvesData.length > 0) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const solves: SolveEntry[] = solvesData.map((item: any) => {
                 let penaltyVal, timeVal, scramble, timestampVal
                 
@@ -237,7 +241,7 @@ function parseJSONImport(json: any, fileName: string): Session[] {
                 }
 
                 let penalty: 'plus2' | 'DNF' | null = null
-                let timeMs = timeVal
+                const timeMs = timeVal
                 
                 if (penaltyVal === 2000) penalty = 'plus2'
                 if (penaltyVal === -1) penalty = 'DNF'
@@ -266,8 +270,11 @@ function parseJSONImport(json: any, fileName: string): Session[] {
   // Case C: CubeDesk
   // Array of sessions? or object?
   // CubeDesk export usually: { sessions: [ { name: "...", solves: [...] } ] }
+
   if (json.sessions && Array.isArray(json.sessions)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       json.sessions.forEach((s: any) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const solves = (s.solves || []).map((solve: any) => {
               // CubeDesk solve: { time: number (seconds), raw_time: number, penalty: 0/2/-1, scramble: string, created_at: string }
               let penalty: 'plus2' | 'DNF' | null = null
@@ -296,7 +303,9 @@ function parseJSONImport(json: any, fileName: string): Session[] {
   return sessions
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function convertExportSessionToInternal(exportSession: any, fileName: string): Session {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const solves = (exportSession.solves || []).map((s: any) => mapExportToInternalSolve(s))
     return {
         id: uuidv4(),

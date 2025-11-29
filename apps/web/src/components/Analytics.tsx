@@ -22,11 +22,28 @@ function formatTime(ms: number) {
     return `${minutes}:${seconds.padStart(5, '0')}`
 }
 
+type TimeRange = 'today' | 'week' | 'month' | '3months' | 'year' | 'all'
+
+const filterByTime = (solves: import('../store').SolveEntry[], range: string) => {
+    const now = new Date()
+    const cutoff = new Date()
+
+    switch (range) {
+        case 'today': cutoff.setHours(0, 0, 0, 0); break;
+        case 'week': cutoff.setDate(now.getDate() - 7); break;
+        case 'month': cutoff.setMonth(now.getMonth() - 1); break;
+        case '3months': cutoff.setMonth(now.getMonth() - 3); break;
+        case 'year': cutoff.setFullYear(now.getFullYear() - 1); break;
+        case 'all': return solves;
+    }
+    return solves.filter(s => s.timestamp >= cutoff.getTime())
+}
+
 export default function Analytics() {
     const [filter, setFilter] = useState<'session' | 'type'>('session')
     const [selectedType, setSelectedType] = useState<string>('333')
-    const [progressionTimeRange, setProgressionTimeRange] = useState<'today' | 'week' | 'month' | '3months' | 'year' | 'all'>('all')
-    const [distributionTimeRange, setDistributionTimeRange] = useState<'today' | 'week' | 'month' | '3months' | 'year' | 'all'>('all')
+    const [progressionTimeRange, setProgressionTimeRange] = useState<TimeRange>('all')
+    const [distributionTimeRange, setDistributionTimeRange] = useState<TimeRange>('all')
     const [heatmapYear, setHeatmapYear] = useState(new Date().getFullYear())
     const [hoveredDay, setHoveredDay] = useState<{ date: string, count: number } | null>(null)
     const [visibleSolvesCount, setVisibleSolvesCount] = useState(20)
@@ -107,21 +124,7 @@ export default function Analytics() {
         return { weeks, months }
     }, [filteredSolves, heatmapYear])
 
-    // Helper for time filtering
-    const filterByTime = (solves: typeof filteredSolves, range: string) => {
-        const now = new Date()
-        const cutoff = new Date()
 
-        switch (range) {
-            case 'today': cutoff.setHours(0, 0, 0, 0); break;
-            case 'week': cutoff.setDate(now.getDate() - 7); break;
-            case 'month': cutoff.setMonth(now.getMonth() - 1); break;
-            case '3months': cutoff.setMonth(now.getMonth() - 3); break;
-            case 'year': cutoff.setFullYear(now.getFullYear() - 1); break;
-            case 'all': return solves;
-        }
-        return solves.filter(s => s.timestamp >= cutoff.getTime())
-    }
 
     const progressionFilteredSolves = useMemo(() => filterByTime(filteredSolves, progressionTimeRange), [filteredSolves, progressionTimeRange])
     const distributionFilteredSolves = useMemo(() => filterByTime(filteredSolves, distributionTimeRange), [filteredSolves, distributionTimeRange])
@@ -317,7 +320,7 @@ export default function Analytics() {
                                 <button
                                     key={range}
                                     className={`range-btn ${progressionTimeRange === range ? 'active' : ''}`}
-                                    onClick={() => setProgressionTimeRange(range as any)}
+                                    onClick={() => setProgressionTimeRange(range as TimeRange)}
                                 >
                                     {range === '3months' ? '3M' : range.charAt(0).toUpperCase() + range.slice(1)}
                                 </button>
@@ -353,7 +356,7 @@ export default function Analytics() {
                                 <button
                                     key={range}
                                     className={`range-btn ${distributionTimeRange === range ? 'active' : ''}`}
-                                    onClick={() => setDistributionTimeRange(range as any)}
+                                    onClick={() => setDistributionTimeRange(range as TimeRange)}
                                 >
                                     {range === '3months' ? '3M' : range.charAt(0).toUpperCase() + range.slice(1)}
                                 </button>
