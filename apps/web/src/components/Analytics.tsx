@@ -1,9 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useStore } from '../store'
 import { SUPPORTED_EVENTS } from 'core'
+import Plot from 'react-plotly.js'
 import {
-    LineChart,
-    Line,
     XAxis,
     YAxis,
     CartesianGrid,
@@ -124,13 +123,10 @@ export default function Analytics() {
         return { weeks, months }
     }, [filteredSolves, heatmapYear])
 
-
-
     const progressionFilteredSolves = useMemo(() => filterByTime(filteredSolves, progressionTimeRange), [filteredSolves, progressionTimeRange])
     const distributionFilteredSolves = useMemo(() => filterByTime(filteredSolves, distributionTimeRange), [filteredSolves, distributionTimeRange])
 
     const stats = useMemo(() => {
-        // Stats are based on the global filter (all solves in session/type), not the chart filters
         const validSolves = filteredSolves.filter(s => s.penalty !== 'DNF')
         const times = validSolves.map(s => s.timeMs + (s.penalty === 'plus2' ? 2000 : 0))
 
@@ -140,28 +136,53 @@ export default function Analytics() {
         const worst = Math.max(...times)
         const mean = times.reduce((a, b) => a + b, 0) / times.length
 
-        // Standard Deviation
         const variance = times.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / times.length
         const stdDev = Math.sqrt(variance)
 
         const totalTime = times.reduce((a, b) => a + b, 0)
 
-        // Improvement: First valid solve - Best solve
-        // Or First valid solve - Last valid solve (trend)
-        // Let's do First - Best to show "Max Improvement"
         const first = validSolves[0].timeMs + (validSolves[0].penalty === 'plus2' ? 2000 : 0)
         const improvement = first - best
 
         return { best, worst, mean, stdDev, count: filteredSolves.length, totalTime, improvement }
     }, [filteredSolves])
 
+    const currentTheme = useStore(state => state.currentTheme)
+    const [themeColors, setThemeColors] = useState({
+        bg: '#011502',
+        textPrimary: '#9ec5ab',
+        textSecondary: '#32746d',
+        accent: '#9ec5ab',
+        border: '#104f55'
+    })
+
+    // Update colors when theme changes
+    useEffect(() => {
+        const getVar = (name: string) => getComputedStyle(document.body).getPropertyValue(name).trim()
+
+        const timer = setTimeout(() => {
+            setThemeColors({
+                bg: getVar('--bg') || '#011502',
+                textPrimary: getVar('--text-primary') || '#9ec5ab',
+                textSecondary: getVar('--text-secondary') || '#32746d',
+                accent: getVar('--accent') || '#9ec5ab',
+                border: getVar('--border') || '#104f55'
+            })
+        }, 50)
+
+        return () => clearTimeout(timer)
+    }, [currentTheme])
+
     const chartData = useMemo(() => {
-        return progressionFilteredSolves.map((s, i) => ({
-            index: i + 1,
-            time: s.penalty === 'DNF' ? null : (s.timeMs + (s.penalty === 'plus2' ? 2000 : 0)) / 1000,
-            date: new Date(s.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
-            raw: s
-        }))
+        return progressionFilteredSolves
+            .sort((a, b) => a.timestamp - b.timestamp)
+            .map((s, i) => ({
+                index: i + 1,
+                timestamp: s.timestamp,
+                time: s.penalty === 'DNF' ? null : (s.timeMs + (s.penalty === 'plus2' ? 2000 : 0)) / 1000,
+                date: new Date(s.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+                raw: s
+            }))
     }, [progressionFilteredSolves])
 
     const distributionData = useMemo(() => {
@@ -174,7 +195,6 @@ export default function Analytics() {
         const max = Math.ceil(Math.max(...times))
         const bins: Record<string, number> = {}
 
-        // Create bins of 1s
         for (let i = min; i <= max; i++) {
             bins[i] = 0
         }
@@ -213,8 +233,6 @@ export default function Analytics() {
                 <Link to="/" className="close-btn">×</Link>
             </div>
 
-
-
             {filter === 'type' && (
                 <div className="type-selector">
                     {SUPPORTED_EVENTS.map(evt => (
@@ -229,7 +247,6 @@ export default function Analytics() {
                 </div>
             )}
 
-            {/* Stats Cards - Always show if we have data, or show zeros */}
             <div className="stats-grid">
                 <div className="stat-card">
                     <label>Total Solves</label>
@@ -329,18 +346,58 @@ export default function Analytics() {
                     </div>
                     <div className="chart-wrapper">
                         {chartData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height={300}>
-                                <LineChart data={chartData}>
-                                    <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                                    <XAxis dataKey="date" stroke="var(--text-secondary)" minTickGap={30} />
-                                    <YAxis domain={['auto', 'auto']} stroke="var(--text-secondary)" />
-                                    <Tooltip
-                                        contentStyle={{ backgroundColor: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8 }}
-                                        labelStyle={{ color: 'var(--text-secondary)' }}
-                                    />
-                                    <Line type="monotone" dataKey="time" stroke="var(--accent)" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-                                </LineChart>
-                            </ResponsiveContainer>
+                            <Plot
+                                data={[
+                                    {
+                                        x: chartData.map(d => new Date(d.timestamp)),
+                                        y: chartData.map(d => d.time),
+                                        type: 'scatter',
+                                        mode: 'lines+markers',
+                                        marker: { color: themeColors.accent, size: 4 },
+                                        line: { color: themeColors.accent, width: 2, shape: 'linear' },
+                                        fill: 'tozeroy',
+                                        fillcolor: themeColors.accent.startsWith('#')
+                                            ? `${themeColors.accent}1A`
+                                            : themeColors.accent.replace('rgb', 'rgba').replace(')', ', 0.1)'),
+                                        hovertemplate: '%{y:.2f}s<br>%{x|%b %d, %Y}<extra></extra>',
+                                    }
+                                ]}
+                                layout={{
+                                    autosize: true,
+                                    height: 300,
+                                    margin: { l: 40, r: 20, t: 20, b: 40 },
+                                    paper_bgcolor: 'rgba(0,0,0,0)',
+                                    plot_bgcolor: 'rgba(0,0,0,0)',
+                                    font: {
+                                        family: 'Inter, sans-serif',
+                                        color: themeColors.textSecondary
+                                    },
+                                    xaxis: {
+                                        gridcolor: `${themeColors.border}33`,
+                                        zerolinecolor: `${themeColors.border}33`,
+                                        tickcolor: themeColors.textSecondary,
+                                        tickfont: { color: themeColors.textSecondary },
+                                        spikethickness: 1,
+                                        showspikes: true,
+                                        spikemode: 'across',
+                                        spikecolor: themeColors.textSecondary,
+                                        spikedash: 'dot'
+                                    },
+                                    yaxis: {
+                                        gridcolor: `${themeColors.border}33`,
+                                        zerolinecolor: `${themeColors.border}33`,
+                                        tickcolor: themeColors.textSecondary,
+                                        tickfont: { color: themeColors.textSecondary }
+                                    },
+                                    hovermode: 'x unified',
+                                    showlegend: false
+                                }}
+                                config={{
+                                    displayModeBar: false,
+                                    responsive: true
+                                }}
+                                style={{ width: '100%', height: '100%' }}
+                            />
                         ) : (
                             <div className="empty-state">No data for this period</div>
                         )}
@@ -382,39 +439,38 @@ export default function Analytics() {
                         )}
                     </div>
                 </div>
+            </div>
 
-                {/* Solves List */}
-                <div className="solves-list-section">
-                    <h3>All Solves</h3>
-                    <div className="analytics-solves-list">
-                        {filteredSolves
-                            .slice()
-                            .sort((a, b) => b.timestamp - a.timestamp)
-                            .slice(0, visibleSolvesCount)
-                            .map((solve, i) => (
-                                <div key={solve.id} className="solve-item">
-                                    <div className="solve-left">
-                                        <span className="solve-index">{filteredSolves.length - i}</span>
-                                        <span className="solve-time">
-                                            {solve.penalty === 'DNF' ? 'DNF' : formatTime(solve.timeMs + (solve.penalty === 'plus2' ? 2000 : 0))}
-                                            {solve.penalty === 'plus2' && '+'}
-                                        </span>
-                                        <span className="solve-date">{new Date(solve.timestamp).toLocaleDateString()}</span>
-                                    </div>
-                                    <div className="solve-scramble-small">{solve.scramble}</div>
+            <div className="solves-list-section">
+                <h3>All Solves</h3>
+                <div className="analytics-solves-list">
+                    {filteredSolves
+                        .slice()
+                        .sort((a, b) => b.timestamp - a.timestamp)
+                        .slice(0, visibleSolvesCount)
+                        .map((solve, i) => (
+                            <div key={solve.id} className="solve-item">
+                                <div className="solve-left">
+                                    <span className="solve-index">{filteredSolves.length - i}</span>
+                                    <span className="solve-time">
+                                        {solve.penalty === 'DNF' ? 'DNF' : formatTime(solve.timeMs + (solve.penalty === 'plus2' ? 2000 : 0))}
+                                        {solve.penalty === 'plus2' && '+'}
+                                    </span>
+                                    <span className="solve-date">{new Date(solve.timestamp).toLocaleDateString()}</span>
                                 </div>
-                            ))}
-                    </div>
-                    {visibleSolvesCount < filteredSolves.length && (
-                        <button
-                            className="btn ghost full-width"
-                            onClick={() => setVisibleSolvesCount(c => c + 20)}
-                            style={{ marginTop: '1rem' }}
-                        >
-                            Load More
-                        </button>
-                    )}
+                                <div className="solve-scramble-small">{solve.scramble}</div>
+                            </div>
+                        ))}
                 </div>
+                {visibleSolvesCount < filteredSolves.length && (
+                    <button
+                        className="btn ghost full-width"
+                        onClick={() => setVisibleSolvesCount(c => c + 20)}
+                        style={{ marginTop: '1rem' }}
+                    >
+                        Load More
+                    </button>
+                )}
             </div>
         </div>
     )

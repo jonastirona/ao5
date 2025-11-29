@@ -1,7 +1,7 @@
 import './App.css'
-import { useEffect } from 'react'
+import { Suspense, lazy, useEffect } from 'react'
 import { useAuth } from './authStore'
-import ScrambleDisplay from './components/ScrambleDisplay'
+const ScrambleDisplay = lazy(() => import('./components/ScrambleDisplay'))
 import TimerDisplay from './components/TimerDisplay'
 import SessionList from './components/SessionList'
 import SessionManager from './components/SessionManager'
@@ -13,6 +13,7 @@ import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import { useStore } from './store'
 
 import About from './components/About'
+import Support from './components/Support'
 
 export default function App() {
   // Initialize auth/session on app start
@@ -59,6 +60,11 @@ export default function App() {
             </Link>
           </div>
           <div className={`header-right ${shouldHide ? 'hidden' : ''}`}>
+            <Link className="header-link" to="/support" aria-label="Support">
+              <svg className="icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+              </svg>
+            </Link>
             <Link className="header-link" to="/about" aria-label="About">
               <svg className="icon" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
@@ -83,7 +89,9 @@ export default function App() {
             element={(
               <>
                 <div className={`scramble-layer ${shouldHide ? 'hidden' : ''}`}>
-                  <ScrambleDisplay />
+                  <Suspense fallback={<div style={{ height: 150 }}></div>}>
+                    <ScrambleDisplay />
+                  </Suspense>
                 </div>
                 <main className="main">
                   <TimerDisplay />
@@ -97,6 +105,7 @@ export default function App() {
           <Route path="/stats" element={<Analytics />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/about" element={<About />} />
+          <Route path="/support" element={<Support />} />
           <Route path="/account" element={<Account />} />
         </Routes>
       </div>
