@@ -38,6 +38,7 @@ interface StoreState {
   // Sessions
   sessions: Session[]
   currentSessionId: string
+  guestSolveCount: number
   
   // Computed Stats (for current session)
   ao5: number | null
@@ -106,6 +107,7 @@ export const useStore = create<StoreState>((set, get) => ({
   
   sessions: [],
   currentSessionId: '',
+  guestSolveCount: 0,
   
   ao5: null,
   ao12: null,
@@ -131,6 +133,9 @@ export const useStore = create<StoreState>((set, get) => ({
         if (Array.isArray(parsed.sessions)) {
             sessions = parsed.sessions
             currentSessionId = parsed.currentSessionId || sessions[0]?.id || ''
+            if (typeof parsed.guestSolveCount === 'number') {
+                set({ guestSolveCount: parsed.guestSolveCount })
+            }
         }
       } else {
         // Migration from v1
@@ -337,7 +342,7 @@ export const useStore = create<StoreState>((set, get) => ({
         set(updates)
         
         try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify({ sessions: updatedSessions, currentSessionId: state.currentSessionId }))
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({ sessions: updatedSessions, currentSessionId: state.currentSessionId, guestSolveCount: state.guestSolveCount }))
         } catch {
           // Ignore storage errors
         }
@@ -349,6 +354,18 @@ export const useStore = create<StoreState>((set, get) => ({
             if (data.session?.user) {
               await syncSolveToCloud(entry)
               get().setSolveSynced(entry.id, true)
+            } else {
+                // Guest user logic
+                const newCount = state.guestSolveCount + 1
+                set({ guestSolveCount: newCount })
+                // Persist count
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify({ sessions: updatedSessions, currentSessionId: state.currentSessionId, guestSolveCount: newCount }))
+                } catch { /* ignore */ }
+
+                if (newCount === 5) {
+                    import('./authStore').then(m => m.useAuth.getState().setShowLoginPrompt(true))
+                }
             }
           } catch (error) {
             console.error('[store] Failed to sync solve:', error)
@@ -865,14 +882,17 @@ export const useStore = create<StoreState>((set, get) => ({
   },
 
   clearSolves: () => {
-    const state = get()
-    const sessions = state.sessions.map(s => ({ ...s, solves: [] }))
-    set({ sessions, ao5: null, ao12: null, ao100: null, best: null, worst: null })
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ sessions, currentSessionId: state.currentSessionId }))
-    } catch {
-      // Ignore storage errors
-    }
+      console.log('[store] Clearing solves and resetting sessions')
+      const defaultSession: Session = {
+          id: crypto.randomUUID(),
+          name: '3x3 Session',
+          puzzleType: '3x3',
+          solves: []
+      }
+      set({ sessions: [defaultSession], currentSessionId: defaultSession.id, guestSolveCount: 0 })
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ sessions: [defaultSession], currentSessionId: defaultSession.id, guestSolveCount: 0 }))
+      } catch { /* ignore */ }
   },
   
   currentTheme: (() => {

@@ -1,0 +1,51 @@
+import { useAuth } from '../authStore'
+import { useStore } from '../store'
+
+export default function GuestBanner() {
+    const user = useAuth(s => s.user)
+    const guestSolveCount = useStore(s => s.guestSolveCount)
+
+
+    if (user || guestSolveCount < 5) return null
+
+    return (
+        <div className="guest-banner">
+            <span>
+                log in / sign up to save your solves and view stats across devices.
+            </span>
+            <button onClick={() => window.dispatchEvent(new CustomEvent('open-auth-modal'))}>log in / sign up</button>
+            <style>{`
+                .guest-banner {
+                    background: var(--bg);
+                    border-bottom: 1px solid var(--border);
+                    padding: 0.75rem 2rem;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    gap: 1rem;
+                    font-size: 0.875rem;
+                    color: var(--text-secondary);
+                    position: sticky;
+                    top: 0;
+                    z-index: 100;
+                }
+                .guest-banner button {
+                    background: var(--accent);
+                    color: white;
+                    border: none;
+                    padding: 0.25rem 0.75rem;
+                    border-radius: 4px;
+                    font-family: inherit;
+                    font-size: 0.75rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                }
+                .guest-banner button:hover {
+                    opacity: 0.9;
+                }
+            `}</style>
+        </div>
+    )
+}

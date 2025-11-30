@@ -19,6 +19,8 @@ import PBAnimation from './components/PBAnimation'
 
 import GlobalShortcuts from './components/GlobalShortcuts'
 import NetworkStatus from './components/NetworkStatus'
+import GuestBanner from './components/GuestBanner'
+import LoginPromptModal from './components/LoginPromptModal'
 
 function AppContent() {
   // Initialize auth/session on app start
@@ -52,6 +54,14 @@ function AppContent() {
     }
   }, [location.pathname, pendingOnboarding])
 
+  useEffect(() => {
+    const handleOpenAuth = () => {
+      navigate('/account')
+    }
+    window.addEventListener('open-auth-modal', handleOpenAuth)
+    return () => window.removeEventListener('open-auth-modal', handleOpenAuth)
+  }, [navigate])
+
   const handleStartTour = () => {
     if (location.pathname !== '/') {
       setPendingOnboarding(true)
@@ -84,6 +94,8 @@ function AppContent() {
       <GlobalShortcuts openOnboarding={handleStartTour} />
       <PBAnimation />
       <NetworkStatus />
+      <GuestBanner />
+      <LoginPromptModal />
       <div className="layout">
 
         <header className="header">

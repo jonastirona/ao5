@@ -25,7 +25,9 @@ interface AuthState {
   pendingLocalOnlyCount: number
   shouldPromptSync: boolean
   lastSyncTime: number | null
+  showLoginPrompt: boolean
 
+  setShowLoginPrompt: (show: boolean) => void
   init: () => Promise<void>
   signUpWithEmailPassword: (email: string, password: string, username: string) => Promise<void>
   signInWithEmailPassword: (email: string, password: string) => Promise<void>
@@ -48,6 +50,9 @@ export const useAuth = create<AuthState>((set, get) => ({
   pendingLocalOnlyCount: 0,
   shouldPromptSync: false,
   lastSyncTime: null,
+  showLoginPrompt: false,
+
+  setShowLoginPrompt: (show) => set({ showLoginPrompt: show }),
 
   init: async () => {
     // Prevent multiple simultaneous initializations
@@ -325,6 +330,18 @@ async function ensureProfileAndHydration(userId: string): Promise<void> {
         
       if (profile?.theme) {
           useStore.getState().setTheme(profile.theme)
+      }
+
+      if (profile?.theme) {
+          useStore.getState().setTheme(profile.theme)
+      }
+
+      // Auto-sync local work before hydrating
+      console.log('[auth] Auto-syncing guest work...')
+      try {
+          await useAuth.getState().syncLocalSolvesToCloud()
+      } catch (e) {
+          console.warn('[auth] Auto-sync failed (likely no local solves or network error):', e)
       }
 
       await useAuth.getState().hydrateFromCloud()

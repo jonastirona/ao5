@@ -474,6 +474,7 @@ body {
   justify-content: center;
   align-items: center;
   padding-top: var(--space-2);
+  padding-bottom: var(--space-4);
   animation: slideUp 0.4s ease-out 0.4s both;
   transition: all 0.3s ease;
 }
