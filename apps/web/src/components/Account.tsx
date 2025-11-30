@@ -138,7 +138,7 @@ export default function Account() {
         {initializing && (
           <div className="loading-state">
             <div className="spinner"></div>
-            <p>Loading authentication...</p>
+            <p>authenticating...</p>
           </div>
         )}
 
@@ -150,35 +150,35 @@ export default function Account() {
               </div>
               <div className="profile-info">
                 <h2>{user.email}</h2>
-                <p>Member since {new Date(user.created_at || Date.now()).getFullYear()}</p>
+                <p>member since {new Date(user.created_at || Date.now()).getFullYear()}</p>
               </div>
             </div>
 
             {globalStats && (
               <div className="profile-stats">
                 <div className="stat-item">
-                  <label>Total Solves</label>
+                  <label>total solves</label>
                   <div className="value">{globalStats.count}</div>
                 </div>
                 <div className="stat-item">
-                  <label>Time Cubing</label>
+                  <label>time cubing</label>
                   <div className="value">{(globalStats.timeSpent / 1000 / 60 / 60).toFixed(1)}h</div>
                 </div>
               </div>
             )}
 
             <div className="profile-actions">
-              <button className="btn ghost" onClick={handleSignOut}>Sign Out</button>
+              <button className="btn ghost" onClick={handleSignOut}>sign out</button>
             </div>
 
             <div className="settings-group" style={{ marginTop: '2rem' }}>
-              <h3>Security</h3>
+              <h3>security</h3>
               <div className="form-group">
-                <label>Update Email</label>
+                <label>update email</label>
                 <div className="input-group" style={{ display: 'flex', gap: '0.5rem' }}>
                   <input
                     className="input"
-                    placeholder="New Email"
+                    placeholder="new email"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                   />
@@ -189,26 +189,26 @@ export default function Account() {
                       setBusy(true)
                       try {
                         await useAuth.getState().updateEmail(email)
-                        addToast('Confirmation email sent!', 'success')
+                        addToast('confirmation email sent!', 'success')
                         setEmail('')
                       } catch {
-                        addToast('Failed to update email', 'error')
+                        addToast('failed to update email', 'error')
                       } finally {
                         setBusy(false)
                       }
                     }}
                   >
-                    Update
+                    update
                   </button>
                 </div>
               </div>
               <div className="form-group">
-                <label>Update Password</label>
+                <label>update password</label>
                 <div className="input-group" style={{ display: 'flex', gap: '0.5rem' }}>
                   <input
                     className="input"
                     type="password"
-                    placeholder="New Password"
+                    placeholder="new password"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                   />
@@ -219,10 +219,10 @@ export default function Account() {
                       setBusy(true)
                       try {
                         await useAuth.getState().updatePassword(password)
-                        addToast('Password updated!', 'success')
+                        addToast('password updated!', 'success')
                         setPassword('')
                       } catch {
-                        addToast('Failed to update password', 'error')
+                        addToast('failed to update password', 'error')
                       } finally {
                         setBusy(false)
                       }
@@ -239,49 +239,49 @@ export default function Account() {
               <div className="danger-actions" style={{ display: 'flex', gap: '1rem', flexDirection: 'column' }}>
                 <div className="danger-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <strong>Delete All Data</strong>
-                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>Permanently delete all your solves.</p>
+                    <strong>DELETE ALL DATA</strong>
+                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>permanently delete all your solves.</p>
                   </div>
                   <button
                     className="btn danger small"
                     onClick={async () => {
-                      if (!confirm('Are you sure you want to delete ALL your solves? This cannot be undone.')) return
+                      if (!confirm('are you sure you want to delete ALL your solves? this cannot be undone.')) return
                       setBusy(true)
                       try {
                         await useAuth.getState().clearUserData()
-                        addToast('All data deleted', 'success')
+                        addToast('all data deleted', 'success')
                       } catch {
-                        addToast('Failed to delete data', 'error')
+                        addToast('failed to delete data', 'error')
                       } finally {
                         setBusy(false)
                       }
                     }}
                   >
-                    Delete Data
+                    delete data
                   </button>
                 </div>
                 <div className="danger-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <strong>Delete Account</strong>
-                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>Permanently delete your account and all data.</p>
+                    <strong>DELETE ACCOUNT</strong>
+                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>permanently delete your account and all data.</p>
                   </div>
                   <button
                     className="btn danger small"
                     onClick={async () => {
-                      if (!confirm('Are you sure you want to delete your account? This cannot be undone.')) return
+                      if (!confirm('are you sure you want to delete your account? this cannot be undone.')) return
                       setBusy(true)
                       try {
                         await useAuth.getState().deleteAccount()
-                        addToast('Account deleted', 'success')
+                        addToast('account deleted', 'success')
                         navigate('/')
                       } catch {
-                        addToast('Failed to delete account', 'error')
+                        addToast('failed to delete account', 'error')
                       } finally {
                         setBusy(false)
                       }
                     }}
                   >
-                    Delete Account
+                    delete account
                   </button>
                 </div>
               </div>
@@ -289,20 +289,20 @@ export default function Account() {
 
             {shouldPromptSync && pendingLocalOnlyCount > 0 && (
               <div className="sync-prompt">
-                <p>We found {pendingLocalOnlyCount} solves on this device that aren't in your account.</p>
+                <p>we found {pendingLocalOnlyCount} solves on this device that aren't in your account.</p>
                 <div className="sync-actions">
                   <button className="btn primary small" onClick={async () => {
                     setBusy(true)
                     try {
                       await syncLocal()
-                      addToast('Synced local solves to cloud', 'success')
+                      addToast('synced local solves to cloud', 'success')
                     } catch {
-                      addToast('Failed to sync local solves', 'error')
+                      addToast('failed to sync local solves', 'error')
                     } finally {
                       setBusy(false)
                     }
-                  }}>Sync Now</button>
-                  <button className="btn text small" onClick={() => dismissSync()}>Dismiss</button>
+                  }}>sync now</button>
+                  <button className="btn text small" onClick={() => dismissSync()}>dismiss</button>
                 </div>
               </div>
             )}
@@ -311,39 +311,39 @@ export default function Account() {
           !initializing && (
             mode === 'login' ? (
               <form className="auth-form" onSubmit={handleLogin}>
-                <h2>Welcome Back</h2>
+                <h2>welcome back</h2>
                 <div className="form-group">
-                  <input className="input" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
+                  <input className="input" placeholder="email" value={email} onChange={e => setEmail(e.target.value)} />
                 </div>
                 <div className="form-group">
-                  <input className="input" placeholder="Password" type="password" value={password} onChange={e => setPassword(e.target.value)} />
+                  <input className="input" placeholder="password" type="password" value={password} onChange={e => setPassword(e.target.value)} />
                 </div>
                 <div className="auth-actions">
-                  <button className="btn primary full-width" type="submit" disabled={!canSubmitLogin || busy}>Log In</button>
-                  <button className="btn ghost full-width" type="button" onClick={handleGoogle} disabled={busy}>Log In with Google</button>
+                  <button className="btn primary full-width" type="submit" disabled={!canSubmitLogin || busy}>log in</button>
+                  <button className="btn ghost full-width" type="button" onClick={handleGoogle} disabled={busy}>log in with google</button>
                 </div>
                 <div className="auth-footer">
-                  <p>Don't have an account? <button type="button" onClick={() => setMode('signup')}>Sign Up</button></p>
+                  <p>don't have an account? <button type="button" onClick={() => setMode('signup')}>sign up</button></p>
                 </div>
               </form>
             ) : (
               <form className="auth-form" onSubmit={handleSignup}>
-                <h2>Create Account</h2>
+                <h2>create account</h2>
                 <div className="form-group">
-                  <input className="input" placeholder="Username" value={username} onChange={e => setUsername(e.target.value)} />
+                  <input className="input" placeholder="username" value={username} onChange={e => setUsername(e.target.value)} />
                 </div>
                 <div className="form-group">
-                  <input className="input" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
+                  <input className="input" placeholder="email" value={email} onChange={e => setEmail(e.target.value)} />
                 </div>
                 <div className="form-group">
-                  <input className="input" placeholder="Password" type="password" value={password} onChange={e => setPassword(e.target.value)} />
+                  <input className="input" placeholder="password" type="password" value={password} onChange={e => setPassword(e.target.value)} />
                 </div>
                 <div className="auth-actions">
-                  <button className="btn primary full-width" type="submit" disabled={!canSubmitSignup || busy}>Sign Up</button>
-                  <button className="btn ghost full-width" type="button" onClick={handleGoogle} disabled={busy}>Sign Up with Google</button>
+                  <button className="btn primary full-width" type="submit" disabled={!canSubmitSignup || busy}>sign up</button>
+                  <button className="btn ghost full-width" type="button" onClick={handleGoogle} disabled={busy}>sign up with google</button>
                 </div>
                 <div className="auth-footer">
-                  <p>Already have an account? <button type="button" onClick={() => setMode('login')}>Log In</button></p>
+                  <p>already have an account? <button type="button" onClick={() => setMode('login')}>log in</button></p>
                 </div>
               </form>
             )

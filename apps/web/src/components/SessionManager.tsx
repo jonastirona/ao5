@@ -62,7 +62,7 @@ export default function SessionManager() {
 
     const handleDelete = (e: React.MouseEvent, id: string) => {
         e.stopPropagation()
-        if (confirm('Are you sure you want to delete this session?')) {
+        if (confirm('are you sure you want to delete this session?')) {
             deleteSession(id)
         }
     }
@@ -76,7 +76,7 @@ export default function SessionManager() {
                     className="session-trigger"
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 >
-                    <span className="session-name">{currentSession?.name || 'Session'}</span>
+                    <span className="session-name">{currentSession?.name || 'session'}</span>
                     <span className="session-type">
                         {SUPPORTED_EVENTS.find(e => e.id === currentSession?.puzzleType)?.name || currentSession?.puzzleType}
                     </span>
@@ -128,7 +128,7 @@ export default function SessionManager() {
                                 setIsDropdownOpen(false)
                             }}
                         >
-                            + New Session
+                            + new session
                         </button>
                     </div>
                 )}
@@ -139,23 +139,23 @@ export default function SessionManager() {
                 <div className="modal-overlay" onClick={() => setIsCreating(false)}>
                     <div className="modal" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
-                            <h3>Create Session</h3>
+                            <h3>create session</h3>
                             <button className="close-btn" onClick={() => setIsCreating(false)}>×</button>
                         </div>
                         <form onSubmit={handleCreate}>
                             <div className="form-group">
-                                <label>Name</label>
+                                <label>name</label>
                                 <input
                                     autoFocus
                                     type="text"
-                                    placeholder="e.g. 3x3 Main"
+                                    placeholder="e.g. 3x3 main"
                                     value={newName}
                                     onChange={e => setNewName(e.target.value)}
                                     className="input"
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Puzzle</label>
+                                <label>puzzle</label>
                                 <div className="puzzle-grid">
                                     {SUPPORTED_EVENTS.map(evt => (
                                         <button
@@ -170,8 +170,8 @@ export default function SessionManager() {
                                 </div>
                             </div>
                             <div className="modal-actions">
-                                <button type="button" className="btn text" onClick={() => setIsCreating(false)}>Cancel</button>
-                                <button type="submit" className="btn primary">Create</button>
+                                <button type="button" className="btn text" onClick={() => setIsCreating(false)}>cancel</button>
+                                <button type="submit" className="btn primary">create</button>
                             </div>
                         </form>
                     </div>
@@ -184,12 +184,12 @@ export default function SessionManager() {
                 <div className="modal-overlay" onClick={() => setIsRenaming(null)}>
                     <div className="modal" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
-                            <h3>Rename Session</h3>
+                            <h3>rename session</h3>
                             <button className="close-btn" onClick={() => setIsRenaming(null)}>×</button>
                         </div>
                         <form onSubmit={handleRename}>
                             <div className="form-group">
-                                <label>Name</label>
+                                <label>name</label>
                                 <input
                                     autoFocus
                                     type="text"
@@ -199,8 +199,8 @@ export default function SessionManager() {
                                 />
                             </div>
                             <div className="modal-actions">
-                                <button type="button" className="btn text" onClick={() => setIsRenaming(null)}>Cancel</button>
-                                <button type="submit" className="btn primary">Save</button>
+                                <button type="button" className="btn text" onClick={() => setIsRenaming(null)}>cancel</button>
+                                <button type="submit" className="btn primary">save</button>
                             </div>
                         </form>
                     </div>

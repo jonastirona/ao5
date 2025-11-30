@@ -67,15 +67,15 @@ export default function ScrambleDisplay() {
         <button
           className="scramble-nav-btn"
           onClick={previousScramble}
-          aria-label="Previous scramble"
+          aria-label="previous scramble"
         >
           ←
         </button>
-        <div className="scramble-text">{scramble}</div>
+        <div className="scramble-text" style={{ maxWidth: '800px', textAlign: 'center', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{scramble}</div>
         <button
           className="scramble-nav-btn"
           onClick={nextScramble}
-          aria-label="Next scramble"
+          aria-label="next scramble"
         >
           →
         </button>

@@ -94,12 +94,14 @@ function SolveRow({ solve, index, onDelete, onPenalty, ao5, ao12, ao100, isOpen,
   )
 }
 
+const EMPTY_SOLVES: SolveEntry[] = []
+
 export default function SessionList() {
   const [isExpanded, setIsExpanded] = useState(false)
   const [openScrambleId, setOpenScrambleId] = useState<string | null>(null)
   const solves = useStore(s => {
     const session = s.sessions.find(sess => sess.id === s.currentSessionId)
-    return session ? session.solves : []
+    return session ? session.solves : EMPTY_SOLVES
   })
   const deleteSolve = useStore(s => s.deleteSolve)
   const updateSolvePenalty = useStore(s => s.updateSolvePenalty)
@@ -174,7 +176,7 @@ export default function SessionList() {
             onToggleScramble={() => setOpenScrambleId(prev => prev === latest.id ? null : latest.id)}
           />
         ) : (
-          <div className="solve-placeholder">No solves yet</div>
+          <div className="solve-placeholder">no solves yet</div>
         )}
       </div>
 
@@ -206,7 +208,7 @@ export default function SessionList() {
             />
           ))
         ) : (
-          <div className="solve-placeholder">No solves yet</div>
+          <div className="solve-placeholder">no solves yet</div>
         )}
       </div>
     </div>

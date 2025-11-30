@@ -37,73 +37,73 @@ export default function About() {
             <div className="about-content">
                 <div className="about-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
-                        <h2>About ao5</h2>
-                        <p>A modern, minimalist speedcubing timer.</p>
+                        <h2>about ao5</h2>
+                        <p>a modern, minimalist speedcubing timer.</p>
                     </div>
                     <Link to="/" className="close-btn">×</Link>
                 </div>
 
                 <div className="settings-section">
-                    <h3>Global Stats</h3>
+                    <h3>global stats</h3>
                     <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
                         <div className="stat-card">
-                            <label>Total Solves</label>
+                            <label>total solves</label>
                             <div className="value">{globalStats.totalSolves.toLocaleString()}</div>
                         </div>
                         <div className="stat-card">
-                            <label>Total Time</label>
+                            <label>total time</label>
                             <div className="value">{(globalStats.totalTime / 1000 / 60 / 60 / 24).toFixed(1)}d</div>
                         </div>
                         <div className="stat-card">
-                            <label>Total Users</label>
+                            <label>total users</label>
                             <div className="value">{globalStats.totalUsers.toLocaleString()}</div>
                         </div>
                         <div className="stat-card">
-                            <label>Concurrent</label>
+                            <label>concurrent</label>
                             <div className="value">{globalStats.concurrentUsers.toLocaleString()}</div>
                         </div>
                     </div>
 
-                    <h3>Controls</h3>
+                    <h3>controls</h3>
                     <ul className="keybindings-list">
                         <li>
-                            <kbd>Space</kbd>
-                            <span>Start/Stop Timer</span>
+                            <kbd>space</kbd>
+                            <span>start/stop timer</span>
                         </li>
                         <li>
-                            <kbd>Esc</kbd>
-                            <span>Reset / Cancel Inspection</span>
-                        </li>
-                        <li>
-                            <div className="key-combo">
-                                <kbd>Alt</kbd> + <kbd>2</kbd>
-                            </div>
-                            <span>+2 Penalty</span>
+                            <kbd>esc</kbd>
+                            <span>reset / cancel inspection</span>
                         </li>
                         <li>
                             <div className="key-combo">
-                                <kbd>Alt</kbd> + <kbd>D</kbd>
+                                <kbd>alt</kbd> + <kbd>2</kbd>
                             </div>
-                            <span>DNF Solve</span>
+                            <span>+2 penalty</span>
                         </li>
                         <li>
                             <div className="key-combo">
-                                <kbd>Alt</kbd> + <kbd>Z</kbd>
+                                <kbd>alt</kbd> + <kbd>d</kbd>
                             </div>
-                            <span>Delete Last Solve</span>
+                            <span>dnf solve</span>
+                        </li>
+                        <li>
+                            <div className="key-combo">
+                                <kbd>alt</kbd> + <kbd>z</kbd>
+                            </div>
+                            <span>delete last solve</span>
                         </li>
                     </ul>
                 </div>
 
                 <div className="settings-section">
-                    <h3>Credits</h3>
+                    <h3>credits</h3>
                     <div className="credits-list">
                         <div className="credit-item">
-                            <strong>Design & Development</strong>
-                            <p>Built with React, Zustand, and Supabase.</p>
+                            <strong>design & development</strong>
+                            <p>built with react, zustand, and supabase.</p>
                         </div>
                         <div className="credit-item">
-                            <strong>Inspiration</strong>
+                            <strong>inspiration</strong>
                             <p>
                                 Inspired by <a href="https://monkeytype.com" target="_blank" rel="noopener noreferrer">Monkeytype</a> and <a href="https://cstimer.net" target="_blank" rel="noopener noreferrer">csTimer</a>.
                             </p>

@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from 'react'
 import { useStore } from '../store'
 import { SUPPORTED_EVENTS } from 'core'
 import Plot from 'react-plotly.js'
+import ShareModal from './ShareModal'
 import {
     XAxis,
     YAxis,
@@ -46,6 +47,8 @@ export default function Analytics() {
     const [heatmapYear, setHeatmapYear] = useState(new Date().getFullYear())
     const [hoveredDay, setHoveredDay] = useState<{ date: string, count: number } | null>(null)
     const [visibleSolvesCount, setVisibleSolvesCount] = useState(20)
+    const [isShareModalOpen, setIsShareModalOpen] = useState(false)
+    const [shareData, setShareData] = useState<{ title?: string, value?: string }>({})
 
     const currentSessionId = useStore(s => s.currentSessionId)
     const sessions = useStore(s => s.sessions)
@@ -214,24 +217,31 @@ export default function Analytics() {
         <div className="analytics-container">
             <div className="analytics-header">
                 <div className="analytics-title">
-                    <h2>Statistics</h2>
+                    <h2>statistics</h2>
                     <div className="filter-tabs">
                         <button
                             className={`filter-tab ${filter === 'session' ? 'active' : ''}`}
                             onClick={() => setFilter('session')}
                         >
-                            By Session
+                            by session
                         </button>
                         <button
                             className={`filter-tab ${filter === 'type' ? 'active' : ''}`}
                             onClick={() => setFilter('type')}
                         >
-                            By Puzzle
+                            by puzzle
                         </button>
                     </div>
                 </div>
                 <Link to="/" className="close-btn">×</Link>
             </div>
+
+            <ShareModal
+                isOpen={isShareModalOpen}
+                onClose={() => setIsShareModalOpen(false)}
+                title={shareData.title}
+                value={shareData.value}
+            />
 
             {filter === 'type' && (
                 <div className="type-selector">
@@ -248,30 +258,31 @@ export default function Analytics() {
             )}
 
             <div className="stats-grid">
-                <div className="stat-card">
-                    <label>Total Solves</label>
-                    <div className="value">{stats ? stats.count : 0}</div>
-                </div>
-                <div className="stat-card">
-                    <label>Best Time</label>
-                    <div className="value highlight">{stats ? formatTime(stats.best) : '-'}</div>
-                </div>
-                <div className="stat-card">
-                    <label>Worst Time</label>
-                    <div className="value">{stats ? formatTime(stats.worst) : '-'}</div>
-                </div>
-                <div className="stat-card">
-                    <label>Average Mean</label>
-                    <div className="value">{stats ? formatTime(stats.mean) : '-'}</div>
-                </div>
-                <div className="stat-card">
-                    <label>Standard Dev</label>
-                    <div className="value">{stats ? formatTime(stats.stdDev) : '-'}</div>
-                </div>
-                <div className="stat-card">
-                    <label>Total Time</label>
-                    <div className="value">{stats ? (stats.totalTime / 1000 / 60).toFixed(1) : '0.0'}m</div>
-                </div>
+                {[
+                    { label: 'total solves', value: stats ? stats.count : 0 },
+                    { label: 'best time', value: stats ? formatTime(stats.best) : '-', highlight: true },
+                    { label: 'worst time', value: stats ? formatTime(stats.worst) : '-' },
+                    { label: 'average mean', value: stats ? formatTime(stats.mean) : '-' },
+                    { label: 'standard dev', value: stats ? formatTime(stats.stdDev) : '-' },
+                    { label: 'total time', value: stats ? (stats.totalTime / 1000 / 60).toFixed(1) + 'm' : '0.0m' }
+                ].map((stat, i) => (
+                    <div key={i} className="stat-card" style={{ position: 'relative' }}>
+                        <label>{stat.label}</label>
+                        <div className={`value ${stat.highlight ? 'highlight' : ''}`}>{stat.value}</div>
+                        <button
+                            className="stat-share-btn"
+                            onClick={() => {
+                                setShareData({ title: stat.label, value: String(stat.value) })
+                                setIsShareModalOpen(true)
+                            }}
+                            aria-label={`Share ${stat.label}`}
+                        >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z" />
+                            </svg>
+                        </button>
+                    </div>
+                ))}
             </div>
 
             <div className="charts-grid-vertical">
@@ -279,7 +290,7 @@ export default function Analytics() {
                 <div className="chart-card full-width">
                     <div className="chart-header">
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: '1rem' }}>
-                            <h3>Activity</h3>
+                            <h3>activity</h3>
                             {hoveredDay && (
                                 <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'JetBrains Mono' }}>
                                     {new Date(hoveredDay.date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}:
@@ -331,7 +342,7 @@ export default function Analytics() {
                 {/* Progression Chart */}
                 <div className="chart-card full-width">
                     <div className="chart-header">
-                        <h3>Progression</h3>
+                        <h3>progression</h3>
                         <div className="time-range-selector">
                             {['today', 'week', 'month', '3months', 'year', 'all'].map(range => (
                                 <button
@@ -339,7 +350,7 @@ export default function Analytics() {
                                     className={`range-btn ${progressionTimeRange === range ? 'active' : ''}`}
                                     onClick={() => setProgressionTimeRange(range as TimeRange)}
                                 >
-                                    {range === '3months' ? '3M' : range.charAt(0).toUpperCase() + range.slice(1)}
+                                    {range === '3months' ? '3m' : range}
                                 </button>
                             ))}
                         </div>
@@ -399,7 +410,7 @@ export default function Analytics() {
                                 style={{ width: '100%', height: '100%' }}
                             />
                         ) : (
-                            <div className="empty-state">No data for this period</div>
+                            <div className="empty-state">no data for this period</div>
                         )}
                     </div>
                 </div>
@@ -407,7 +418,7 @@ export default function Analytics() {
                 {/* Time Distribution Chart */}
                 <div className="chart-card full-width">
                     <div className="chart-header">
-                        <h3>Time Distribution</h3>
+                        <h3>time distribution</h3>
                         <div className="time-range-selector">
                             {['today', 'week', 'month', '3months', 'year', 'all'].map(range => (
                                 <button
@@ -415,7 +426,7 @@ export default function Analytics() {
                                     className={`range-btn ${distributionTimeRange === range ? 'active' : ''}`}
                                     onClick={() => setDistributionTimeRange(range as TimeRange)}
                                 >
-                                    {range === '3months' ? '3M' : range.charAt(0).toUpperCase() + range.slice(1)}
+                                    {range === '3months' ? '3m' : range}
                                 </button>
                             ))}
                         </div>
@@ -435,14 +446,14 @@ export default function Analytics() {
                                 </BarChart>
                             </ResponsiveContainer>
                         ) : (
-                            <div className="empty-state">No data for this period</div>
+                            <div className="empty-state">no data for this period</div>
                         )}
                     </div>
                 </div>
-            </div>
+            </div >
 
             <div className="solves-list-section">
-                <h3>All Solves</h3>
+                <h3>all solves</h3>
                 <div className="analytics-solves-list">
                     {filteredSolves
                         .slice()
@@ -468,10 +479,10 @@ export default function Analytics() {
                         onClick={() => setVisibleSolvesCount(c => c + 20)}
                         style={{ marginTop: '1rem' }}
                     >
-                        Load More
+                        load more
                     </button>
                 )}
             </div>
-        </div>
+        </div >
     )
 }

@@ -1,0 +1,347 @@
+import { useState, useEffect, useLayoutEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
+
+interface TourStep {
+    target: string // data-tour attribute value
+    title: string
+    content: string
+    position?: 'top' | 'bottom' | 'left' | 'right' | 'center'
+}
+
+interface TourOverlayProps {
+    isOpen: boolean
+    onClose: () => void
+}
+
+const TOUR_STEPS: TourStep[] = [
+    {
+        target: 'welcome',
+        title: 'welcome to ao5',
+        content: 'let\'s take a quick tour of the features!',
+        position: 'center'
+    },
+    {
+        target: 'timer',
+        title: 'the timer',
+        content: 'this is the main event. hold space to start inspection, release to solve. your time will be saved automatically.',
+        position: 'bottom'
+    },
+    {
+        target: 'scramble',
+        title: 'scramble',
+        content: 'here is your current scramble. it updates automatically after each solve.',
+        position: 'bottom'
+    },
+    {
+        target: 'solve-list',
+        title: 'session list',
+        content: 'view your recent solves here. you can delete solves or change penalties if needed.',
+        position: 'top'
+    },
+    {
+        target: 'stats-link',
+        title: 'analytics',
+        content: 'click here to view detailed statistics, progression charts, and heatmaps of your activity.',
+        position: 'bottom'
+    },
+    {
+        target: 'about-link',
+        title: 'info',
+        content: 'learn more about the app, view keyboard shortcuts, and see credits.',
+        position: 'bottom'
+    },
+    {
+        target: 'settings-link',
+        title: 'settings',
+        content: 'customize the app to your liking. change themes, adjust timer behavior, and manage your account.',
+        position: 'bottom'
+    },
+    {
+        target: 'account-link',
+        title: 'profile',
+        content: 'manage your account settings, view your profile, and sign out.',
+        position: 'bottom'
+    },
+    {
+        target: 'support-link',
+        title: 'support',
+        content: 'want to support us? found a bug? reach out here.',
+        position: 'bottom'
+    }
+]
+
+export default function TourOverlay({ isOpen, onClose }: TourOverlayProps) {
+    const [currentStepIndex, setCurrentStepIndex] = useState(0)
+    const [targetRect, setTargetRect] = useState<DOMRect | null>(null)
+    const [isTransitioning, setIsTransitioning] = useState(false)
+    const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({})
+    const tooltipRef = useRef<HTMLDivElement>(null)
+
+    const [positionedStep, setPositionedStep] = useState(-1)
+
+    const currentStep = TOUR_STEPS[currentStepIndex]
+
+    useEffect(() => {
+        if (isOpen) {
+            setCurrentStepIndex(0)
+            updateTargetRect(0)
+
+            // Prevent scrolling
+            document.body.style.overflow = 'hidden'
+        } else {
+            document.body.style.overflow = ''
+        }
+
+        return () => {
+            document.body.style.overflow = ''
+        }
+    }, [isOpen])
+
+    useEffect(() => {
+        let timeoutId: ReturnType<typeof setTimeout>
+        const handleResize = () => {
+            clearTimeout(timeoutId)
+            timeoutId = setTimeout(() => updateTargetRect(currentStepIndex), 100)
+        }
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (!isOpen) return
+
+            if (e.key === 'Escape') {
+                onClose()
+            } else if (e.key === 'ArrowRight') {
+                handleNext()
+            } else if (e.key === 'ArrowLeft') {
+                handleBack()
+            }
+        }
+
+        window.addEventListener('resize', handleResize)
+        window.addEventListener('keydown', handleKeyDown)
+
+        return () => {
+            window.removeEventListener('resize', handleResize)
+            window.removeEventListener('keydown', handleKeyDown)
+            clearTimeout(timeoutId)
+        }
+    }, [isOpen, currentStepIndex])
+
+    const getTargetRect = (step: TourStep) => {
+        if (step.target === 'welcome') {
+            // Virtual center target matching tooltip size exactly
+            // Tooltip width is 320px + 1.5rem (24px) padding * 2 = 368px
+            // But we want the spotlight to match the VISUAL card size.
+            // The card is 320px wide + padding.
+            // ADJUST WELCOME SPOTLIGHT WIDTH HERE
+            const width = 320 // User preference
+            const height = 170 // Approximate height
+            return {
+                top: window.innerHeight / 2 - height / 2,
+                left: window.innerWidth / 2 - width / 2,
+                width,
+                height,
+                right: window.innerWidth / 2 + width / 2,
+                bottom: window.innerHeight / 2 + height / 2,
+                x: window.innerWidth / 2 - width / 2,
+                y: window.innerHeight / 2 - height / 2,
+                toJSON: () => { }
+            }
+        }
+
+        const element = document.querySelector(`[data-tour="${step.target}"]`)
+        if (element) {
+            const rect = element.getBoundingClientRect()
+            // Add some padding
+            const padding = 10
+            return {
+                top: rect.top - padding,
+                left: rect.left - padding,
+                width: rect.width + padding * 2,
+                height: rect.height + padding * 2,
+                right: rect.right + padding,
+                bottom: rect.bottom + padding,
+                x: rect.left - padding,
+                y: rect.top - padding,
+                toJSON: () => { }
+            }
+        }
+        return null
+    }
+
+    const updateTargetRect = (index: number) => {
+        const rect = getTargetRect(TOUR_STEPS[index])
+        setTargetRect(rect)
+    }
+
+    const handleNext = () => {
+        if (currentStepIndex < TOUR_STEPS.length - 1) {
+            setIsTransitioning(true)
+            // Wait for fade out
+            setTimeout(() => {
+                const nextIndex = currentStepIndex + 1
+                const nextRect = getTargetRect(TOUR_STEPS[nextIndex])
+
+                // Batch updates to prevent jumping
+                setCurrentStepIndex(nextIndex)
+                setTargetRect(nextRect)
+
+                // Wait for rect transition to start/finish slightly before fading in
+                setTimeout(() => {
+                    setIsTransitioning(false)
+                }, 150)
+            }, 200)
+        } else {
+            onClose()
+        }
+    }
+
+    const handleBack = () => {
+        if (currentStepIndex > 0) {
+            setIsTransitioning(true)
+            setTimeout(() => {
+                const prevIndex = currentStepIndex - 1
+                const prevRect = getTargetRect(TOUR_STEPS[prevIndex])
+
+                // Batch updates
+                setCurrentStepIndex(prevIndex)
+                setTargetRect(prevRect)
+
+                setTimeout(() => {
+                    setIsTransitioning(false)
+                }, 150)
+            }, 200)
+        }
+    }
+
+    useLayoutEffect(() => {
+        if (!targetRect || !tooltipRef.current) return
+
+        const tooltip = tooltipRef.current
+        const { width: tooltipWidth, height: tooltipHeight } = tooltip.getBoundingClientRect()
+        const padding = 20
+
+        if (currentStep.position === 'center') {
+            setTooltipStyle({
+                top: window.innerHeight / 2 - tooltipHeight / 2,
+                left: window.innerWidth / 2 - tooltipWidth / 2,
+            })
+            setPositionedStep(currentStepIndex)
+            return
+        }
+
+        // Horizontal positioning
+        // Start centered on target
+        let left = targetRect.left + (targetRect.width / 2) - (tooltipWidth / 2)
+
+        // Clamp to viewport edges
+        const minLeft = padding
+        const maxLeft = window.innerWidth - tooltipWidth - padding
+
+        left = Math.max(minLeft, Math.min(left, maxLeft))
+
+        // Vertical positioning
+        let top = 0
+
+        // Default preference
+        const preferTop = currentStep.position === 'top'
+
+        if (preferTop) {
+            // Try top first
+            if (targetRect.top - 10 - tooltipHeight > padding) {
+                top = targetRect.top - 10 - tooltipHeight
+            } else {
+                // Flip to bottom
+                top = targetRect.bottom + 20
+            }
+        } else {
+            // Try bottom first
+            if (targetRect.bottom + 20 + tooltipHeight < window.innerHeight - padding) {
+                top = targetRect.bottom + 20
+            } else {
+                // Flip to top
+                top = targetRect.top - 10 - tooltipHeight
+            }
+        }
+
+        setTooltipStyle({ top, left })
+        setPositionedStep(currentStepIndex)
+    }, [targetRect, currentStep.position, currentStepIndex])
+
+    if (!isOpen || !targetRect) return null
+
+    const isPositioned = positionedStep === currentStepIndex
+
+    return createPortal(
+        <div className="tour-overlay">
+            {/* Spotlight SVG Mask */}
+            <svg className="tour-mask" width="100%" height="100%">
+                <defs>
+                    <mask id="spotlight-mask">
+                        <rect x="0" y="0" width="100%" height="100%" fill="white" />
+                        <rect
+                            x={targetRect.x}
+                            y={targetRect.y}
+                            width={targetRect.width}
+                            height={targetRect.height}
+                            rx="8"
+                            fill="black"
+                            className="spotlight-rect"
+                        />
+                    </mask>
+                </defs>
+                <rect
+                    x="0"
+                    y="0"
+                    width="100%"
+                    height="100%"
+                    fill="rgba(0, 0, 0, 0.7)"
+                    mask="url(#spotlight-mask)"
+                />
+                {/* Highlight Border */}
+                <rect
+                    x={targetRect.x}
+                    y={targetRect.y}
+                    width={targetRect.width}
+                    height={targetRect.height}
+                    rx="8"
+                    fill="none"
+                    stroke="var(--accent)"
+                    strokeWidth="2"
+                    className="spotlight-border"
+                />
+            </svg>
+
+            {/* Tooltip */}
+            <div
+                ref={tooltipRef}
+                className={`tour-tooltip ${isTransitioning ? 'fade-out' : 'fade-in'}`}
+                style={{
+                    ...tooltipStyle,
+                    visibility: isPositioned ? 'visible' : 'hidden',
+                    // Disable transitions on position properties to prevent jumping
+                    transition: isPositioned ? 'opacity 0.2s ease' : 'none'
+                }}
+            >
+                <div className="tour-header">
+                    <h3>{currentStep.title}</h3>
+                    <button className="close-btn-small" onClick={onClose}>×</button>
+                </div>
+                <p>{currentStep.content}</p>
+                <div className="tour-footer">
+                    <div className="tour-progress">
+                        {currentStepIndex + 1} / {TOUR_STEPS.length}
+                    </div>
+                    <div className="tour-actions">
+                        {currentStepIndex > 0 && (
+                            <button className="btn ghost small" onClick={handleBack}>back</button>
+                        )}
+                        <button className="btn primary small" onClick={handleNext}>
+                            {currentStepIndex === TOUR_STEPS.length - 1 ? 'finish' : 'next'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>,
+        document.body
+    )
+}

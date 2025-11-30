@@ -45,6 +45,9 @@ interface StoreState {
   best: number | null
   worst: number | null
   
+  lastSolveWasPB: { types: ('single' | 'ao5' | 'ao12' | 'ao100')[], id: number } | null
+  clearPBStatus: () => void
+  
   // Actions
   init: () => Promise<void>
   startListening: () => void
@@ -81,6 +84,7 @@ export interface Settings {
   inspectionDuration: number // ms
   showScrambleImage: boolean
   scrambleImageScale: number
+  pbEffectsEnabled: boolean
 }
 
 const STORAGE_KEY = 'ao5.sessions.v2' // Bumped version for new schema
@@ -106,6 +110,9 @@ export const useStore = create<StoreState>((set, get) => ({
   ao100: null,
   best: null,
   worst: null,
+  
+  lastSolveWasPB: null,
+  clearPBStatus: () => set({ lastSolveWasPB: null }),
 
   init: async () => {
     if (get().initialized) return
@@ -187,7 +194,13 @@ export const useStore = create<StoreState>((set, get) => ({
     }
 
     // Load settings
-    let settings: Settings = { inspectionEnabled: true, inspectionDuration: 15000, showScrambleImage: true, scrambleImageScale: 1 }
+    let settings: Settings = { 
+        inspectionEnabled: true, 
+        inspectionDuration: 15000, 
+        showScrambleImage: true, 
+        scrambleImageScale: 1,
+        pbEffectsEnabled: true
+    }
     try {
         const rawSettings = localStorage.getItem('ao5.settings')
         if (rawSettings) {
@@ -195,6 +208,26 @@ export const useStore = create<StoreState>((set, get) => ({
         }
     } catch {
         // Ignore storage errors
+    }
+
+    // Load settings from cloud if logged in
+    try {
+        const { data } = await supabase.auth.getSession()
+        if (data.session?.user) {
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('preferences')
+                .eq('id', data.session.user.id)
+                .single()
+            
+            if (profile?.preferences) {
+                settings = { ...settings, ...profile.preferences }
+                // Update local storage to match cloud
+                localStorage.setItem('ao5.settings', JSON.stringify(settings))
+            }
+        }
+    } catch (e) {
+        console.error('[store] Failed to load settings from cloud:', e)
     }
 
     set({ sessions, currentSessionId, settings })
@@ -256,7 +289,39 @@ export const useStore = create<StoreState>((set, get) => ({
         )
         
         const stats = calculateAverages(updatedSolves)
-        set({ sessions: updatedSessions, ...stats })
+        
+        const pbTypes: ('single' | 'ao5' | 'ao12' | 'ao100')[] = []
+
+        // Check for PBs
+        if (state.settings.pbEffectsEnabled) {
+            const oldBest = state.best
+            const oldAo5 = state.ao5
+            const oldAo12 = state.ao12
+            const oldAo100 = state.ao100
+            
+            // Check single PB (lower is better, ignore nulls)
+            if (stats.best !== null && (oldBest === null || stats.best < oldBest)) {
+                pbTypes.push('single')
+            }
+            // Check averages
+            if (stats.ao5 !== null && (oldAo5 === null || stats.ao5 < oldAo5)) {
+                pbTypes.push('ao5')
+            }
+            
+            if (stats.ao12 !== null && (oldAo12 === null || stats.ao12 < oldAo12)) {
+                pbTypes.push('ao12')
+            }
+            
+            if (stats.ao100 !== null && (oldAo100 === null || stats.ao100 < oldAo100)) {
+                pbTypes.push('ao100')
+            }
+        }
+
+        const updates: Partial<StoreState> = { sessions: updatedSessions, ...stats }
+        if (pbTypes.length > 0) {
+            updates.lastSolveWasPB = { types: pbTypes, id: Date.now() }
+        }
+        set(updates)
         
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify({ sessions: updatedSessions, currentSessionId: state.currentSessionId }))
@@ -809,21 +874,39 @@ export const useStore = create<StoreState>((set, get) => ({
       inspectionEnabled: true,
       inspectionDuration: 15000,
       showScrambleImage: true,
-      scrambleImageScale: 1
+      scrambleImageScale: 1,
+      pbEffectsEnabled: true
   },
   
   updateSettings: (newSettings: Partial<Settings>) => {
-      set(state => {
-          const settings = { ...state.settings, ...newSettings }
-          state.timer?.updateSettings({ inspectionDurationMs: settings.inspectionDuration })
-          
+      const state = get()
+      const updated = { ...state.settings, ...newSettings }
+      
+      // Update timer if needed
+      if (newSettings.inspectionDuration) {
+          state.timer?.updateSettings({ inspectionDurationMs: updated.inspectionDuration })
+      }
+
+      set({ settings: updated })
+      
+      try {
+          localStorage.setItem('ao5.settings', JSON.stringify(updated))
+      } catch {
+          // Ignore storage errors
+      }
+      
+      // Sync to cloud
+      void (async () => {
           try {
-              localStorage.setItem('ao5.settings', JSON.stringify(settings))
-          } catch {
-              // Ignore storage errors
+              const { data } = await supabase.auth.getSession()
+              if (data.session?.user) {
+                  await supabase.from('profiles').update({ 
+                      preferences: updated 
+                  }).eq('id', data.session.user.id)
+              }
+          } catch (e) {
+              console.error('[store] Failed to sync settings:', e)
           }
-          
-          return { settings }
-      })
+      })()
   }
 }))

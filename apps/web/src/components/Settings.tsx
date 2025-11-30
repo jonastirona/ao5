@@ -102,16 +102,16 @@ export default function Settings() {
         }
 
         if (totalSessions > 0) {
-            setImportSuccess(`Imported ${totalSessions} session(s) with ${totalSolves} solve(s).`)
+            setImportSuccess(`imported ${totalSessions} session(s) with ${totalSolves} solve(s).`)
             setImportError(null)
             setTimeout(() => setImportSuccess(null), 5000)
         } else if (errors > 0) {
-            setImportError('Failed to import sessions. Check file format.')
+            setImportError('failed to import sessions. check file format.')
             setImportSuccess(null)
             setTimeout(() => setImportError(null), 3000)
         } else {
             // No sessions found, but no errors (e.g. empty file or empty sessions)
-            setImportSuccess('No valid sessions found to import.')
+            setImportSuccess('no valid sessions found to import.')
             setTimeout(() => setImportSuccess(null), 3000)
         }
     }
@@ -127,18 +127,18 @@ export default function Settings() {
     return (
         <div className="settings-container">
             <div className="settings-header">
-                <h2>Settings</h2>
+                <h2>settings</h2>
                 <Link to="/" className="close-btn">×</Link>
             </div>
 
             <div className="settings-layout">
                 <div className="settings-row">
                     <section className="settings-section">
-                        <h3>Timer</h3>
+                        <h3>timer</h3>
                         <div className="setting-item">
                             <div className="setting-info">
-                                <label>Inspection</label>
-                                <p>Enable WCA-style inspection phase</p>
+                                <label>inspection</label>
+                                <p>enable wca-style inspection phase</p>
                             </div>
                             <label className="toggle-switch">
                                 <input
@@ -153,8 +153,8 @@ export default function Settings() {
                         {settings.inspectionEnabled && (
                             <div className="setting-item">
                                 <div className="setting-info">
-                                    <label>Inspection Duration</label>
-                                    <p>Time in seconds (default 15s)</p>
+                                    <label>inspection duration</label>
+                                    <p>time in seconds (default 15s)</p>
                                 </div>
                                 <div className="setting-control">
                                     <input
@@ -171,8 +171,8 @@ export default function Settings() {
 
                         <div className="setting-item">
                             <div className="setting-info">
-                                <label>Scramble Image</label>
-                                <p>Show 3D visualization of the scramble</p>
+                                <label>scramble image</label>
+                                <p>show 3d visualization of the scramble</p>
                             </div>
                             <label className="toggle-switch">
                                 <input
@@ -187,8 +187,8 @@ export default function Settings() {
                         {settings.showScrambleImage && (
                             <div className="setting-item">
                                 <div className="setting-info">
-                                    <label>Image Size</label>
-                                    <p>Scale: {settings.scrambleImageScale || 1}x</p>
+                                    <label>image size</label>
+                                    <p>scale: {settings.scrambleImageScale || 1}x</p>
                                 </div>
                                 <div className="setting-control">
                                     <input
@@ -203,22 +203,37 @@ export default function Settings() {
                                 </div>
                             </div>
                         )}
+
+                        <div className="setting-item">
+                            <div className="setting-info">
+                                <label>pb effects</label>
+                                <p>show animations for new personal bests</p>
+                            </div>
+                            <label className="toggle-switch">
+                                <input
+                                    type="checkbox"
+                                    checked={settings.pbEffectsEnabled ?? true}
+                                    onChange={(e) => updateSettings({ pbEffectsEnabled: e.target.checked })}
+                                />
+                                <span className="slider"></span>
+                            </label>
+                        </div>
                     </section>
 
                     <section className="settings-section">
-                        <h3>Data</h3>
+                        <h3>data</h3>
                         <div className="data-actions-col">
                             <div className="data-group">
-                                <h4>Export Current Session</h4>
+                                <h4>export current session</h4>
                                 <div className="button-group">
-                                    <button className="btn" onClick={() => handleExport('json')}>JSON</button>
-                                    <button className="btn" onClick={() => handleExport('csv')}>CSV</button>
-                                    <button className="btn" onClick={() => handleExport('txt')}>Text</button>
+                                    <button className="btn" onClick={() => handleExport('json')}>json</button>
+                                    <button className="btn" onClick={() => handleExport('csv')}>csv</button>
+                                    <button className="btn" onClick={() => handleExport('txt')}>text</button>
                                 </div>
                             </div>
 
                             <div className="data-group">
-                                <h4>Import Sessions</h4>
+                                <h4>import sessions</h4>
                                 <div
                                     className={`drop-zone ${isDragging ? 'dragging' : ''}`}
                                     onDragOver={handleDragOver}
@@ -227,12 +242,12 @@ export default function Settings() {
                                 >
                                     <div className="file-input-wrapper full-width">
                                         <button className="btn ghost full-width">
-                                            {isDragging ? 'Drop files here' : 'Select or Drop Files (JSON, CSV, TXT)'}
+                                            {isDragging ? 'drop files here' : 'select or drop files (json, csv, txt)'}
                                         </button>
                                         <input type="file" accept=".json,.csv,.txt" onChange={handleImport} multiple />
                                     </div>
                                 </div>
-                                <p className="hint">Supports ao5 JSON, csTimer, CubeDesk, Flowtimer CSV, and plain text.</p>
+                                <p className="hint">supports ao5 json, cstimer, cubedesk, flowtimer csv, and plain text.</p>
                             </div>
                         </div>
                         {importSuccess && <div className="toast success" style={{ position: 'static', marginTop: '1rem' }}>{importSuccess}</div>}
@@ -241,7 +256,7 @@ export default function Settings() {
                 </div>
 
                 <section className="settings-section full-width">
-                    <h3>Appearance</h3>
+                    <h3>appearance</h3>
                     <ThemeSelector />
                 </section>
             </div>
