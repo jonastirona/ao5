@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom'
 interface TourStep {
     target: string // data-tour attribute value
     title: string
-    content: string
+    content: React.ReactNode
     position?: 'top' | 'bottom' | 'left' | 'right' | 'center'
 }
 
@@ -37,6 +37,44 @@ const TOUR_STEPS: TourStep[] = [
         title: 'session list',
         content: 'view your recent solves here. you can delete solves or change penalties if needed.',
         position: 'top'
+    },
+    {
+        target: 'shortcuts-info',
+        title: 'keyboard shortcuts',
+        content: (
+            <div className="tour-shortcuts">
+                <p style={{ marginBottom: '1rem' }}>master the app with these shortcuts:</p>
+                <ul className="keybindings-list" style={{ padding: 0, margin: 0 }}>
+                    <li>
+                        <kbd>space</kbd>
+                        <span>start/stop timer</span>
+                    </li>
+                    <li>
+                        <kbd>esc</kbd>
+                        <span>reset / cancel inspection</span>
+                    </li>
+                    <li>
+                        <div className="key-combo">
+                            <kbd>alt</kbd> + <kbd>2</kbd>
+                        </div>
+                        <span>+2 penalty</span>
+                    </li>
+                    <li>
+                        <div className="key-combo">
+                            <kbd>alt</kbd> + <kbd>d</kbd>
+                        </div>
+                        <span>dnf solve</span>
+                    </li>
+                    <li>
+                        <div className="key-combo">
+                            <kbd>alt</kbd> + <kbd>z</kbd>
+                        </div>
+                        <span>delete last solve</span>
+                    </li>
+                </ul>
+            </div>
+        ),
+        position: 'center'
     },
     {
         target: 'stats-link',
@@ -127,14 +165,14 @@ export default function TourOverlay({ isOpen, onClose }: TourOverlayProps) {
     }, [isOpen, currentStepIndex])
 
     const getTargetRect = (step: TourStep) => {
-        if (step.target === 'welcome') {
+        if (step.target === 'welcome' || step.target === 'shortcuts-info') {
             // Virtual center target matching tooltip size exactly
             // Tooltip width is 320px + 1.5rem (24px) padding * 2 = 368px
             // But we want the spotlight to match the VISUAL card size.
             // The card is 320px wide + padding.
             // ADJUST WELCOME SPOTLIGHT WIDTH HERE
             const width = 320 // User preference
-            const height = 170 // Approximate height
+            const height = step.target === 'shortcuts-info' ? 385 : 260 // Approximate height
             return {
                 top: window.innerHeight / 2 - height / 2,
                 left: window.innerWidth / 2 - width / 2,

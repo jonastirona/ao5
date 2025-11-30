@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../authStore'
 
 export default function Support() {
-    const [activeTab, setActiveTab] = useState<'donate' | 'sponsors' | 'feedback'>('donate')
+    const [activeTab, setActiveTab] = useState<'donate' | 'ads' | 'feedback'>('donate')
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [isSuccess, setIsSuccess] = useState(false)
     const [isDropdownOpen, setIsDropdownOpen] = useState(false)
@@ -55,13 +55,13 @@ export default function Support() {
                     donate
                 </button>
                 <button
-                    className={`tab ${activeTab === 'sponsors' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('sponsors')}
+                    className={`tab ${activeTab === 'ads' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('ads')}
                 >
                     <svg className="tab-icon" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
                     </svg>
-                    sponsors
+                    ads
                 </button>
                 <button
                     className={`tab ${activeTab === 'feedback' ? 'active' : ''}`}
@@ -92,9 +92,9 @@ export default function Support() {
                     </div>
                 )}
 
-                {activeTab === 'sponsors' && (
+                {activeTab === 'ads' && (
                     <div className="support-section">
-                        <h3>our sponsors</h3>
+                        <h3>ads</h3>
                         <p className="subtitle">check out these offers to support us for free.</p>
 
                         <div className="ad-container">
