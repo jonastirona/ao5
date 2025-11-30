@@ -1,5 +1,6 @@
 
 
+import { createPortal } from 'react-dom'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 
 interface ConfirmationModalProps {
@@ -25,7 +26,7 @@ export default function ConfirmationModal({
 
     if (!isOpen) return null
 
-    return (
+    return createPortal(
         <div className="modal-overlay" style={{
             position: 'fixed',
             top: 0,
@@ -36,7 +37,7 @@ export default function ConfirmationModal({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 1000,
+            zIndex: 9999,
             backdropFilter: 'blur(4px)'
         }}>
             <div ref={modalRef} className="modal-content" style={{
@@ -66,6 +67,7 @@ export default function ConfirmationModal({
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     )
 }

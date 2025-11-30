@@ -1,6 +1,8 @@
 import { useMemo, useRef, useLayoutEffect, useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useStore, type SolveEntry } from '../store'
 import { calculateAverages } from 'core'
+import ConfirmationModal from './ConfirmationModal'
 
 function formatTime(ms: number) {
   const s = (ms / 1000).toFixed(2)
@@ -33,40 +35,50 @@ type SolveRowProps = {
   isPbAo100?: boolean
   isOpen: boolean
   onToggleScramble: () => void
-  rowRef?: React.Ref<HTMLDivElement>
+  rowRef?: React.RefObject<HTMLDivElement | null>
 }
 
-function SolveRow({ solve, index, onDelete, onPenalty, ao5, ao12, ao100, isPbSingle, isPbAo5, isPbAo12, isPbAo100, isOpen, onToggleScramble, rowRef }: SolveRowProps) {
-  const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    onDelete()
-  }
+function SolveRow({
+  solve,
+  index,
+  onDelete,
+  onPenalty,
+  ao5,
+  ao12,
+  ao100,
+  isPbSingle,
+  isPbAo5,
+  isPbAo12,
+  isPbAo100,
+  rowRef,
+  isOpen,
+  onToggleScramble
+}: SolveRowProps) {
+  const [menuPos, setMenuPos] = useState<{ top?: number, bottom?: number, left?: number, right?: number } | null>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+
+  useLayoutEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect()
+      // Position above the button, aligned right
+      setMenuPos({
+        bottom: window.innerHeight - rect.top + 8, // 8px gap
+        right: window.innerWidth - rect.right
+      })
+    }
+  }, [isOpen])
 
   const toggleScramble = (e: React.MouseEvent) => {
     e.stopPropagation()
     onToggleScramble()
   }
 
-  const handleEnter = (callback: () => void) => (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.code === 'Enter') {
-      e.preventDefault()
-      e.stopPropagation()
-      callback()
-    }
-  }
-
-  const cyclePenalty = (e: React.MouseEvent) => {
+  const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (solve.penalty === null) onPenalty('plus2')
-    else if (solve.penalty === 'plus2') onPenalty('DNF')
-    else onPenalty(null)
+    onDelete()
   }
 
-  const handlePenaltyKeyDown = handleEnter(() => {
-    if (solve.penalty === null) onPenalty('plus2')
-    else if (solve.penalty === 'plus2') onPenalty('DNF')
-    else onPenalty(null)
-  })
+
 
   return (
     <div className="solve-item-wrapper" ref={rowRef}>
@@ -76,12 +88,9 @@ function SolveRow({ solve, index, onDelete, onPenalty, ao5, ao12, ao100, isPbSin
           <div className="solve-inline">
             <span
               className={`solve-time ${solve.penalty === 'DNF' ? 'dnf' : ''} ${isPbSingle ? 'pb-value' : ''}`}
-              onClick={cyclePenalty}
-              title="Click to cycle penalty"
               role="button"
               tabIndex={0}
-              onKeyDown={handlePenaltyKeyDown}
-              aria-label={`Time: ${formatSolve(solve)}. Click to cycle penalty.`}
+              aria-label={`Time: ${formatSolve(solve)}`}
             >
               {formatSolve(solve)}
             </span>
@@ -91,20 +100,62 @@ function SolveRow({ solve, index, onDelete, onPenalty, ao5, ao12, ao100, isPbSin
           </div>
         </div>
         <div className="solve-actions">
-          <button className="solve-btn" onClick={toggleScramble} aria-label={isOpen ? 'Hide scramble' : 'Show scramble'}>
-            {/* Rubik's cube icon */}
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="1" y="1" width="4" height="4" rx="1" ry="1" stroke="currentColor" />
-              <rect x="6" y="1" width="4" height="4" rx="1" ry="1" stroke="currentColor" />
-              <rect x="11" y="1" width="4" height="4" rx="1" ry="1" stroke="currentColor" />
-              <rect x="1" y="6" width="4" height="4" rx="1" ry="1" stroke="currentColor" />
-              <rect x="6" y="6" width="4" height="4" rx="1" ry="1" stroke="currentColor" />
-              <rect x="11" y="6" width="4" height="4" rx="1" ry="1" stroke="currentColor" />
-              <rect x="1" y="11" width="4" height="4" rx="1" ry="1" stroke="currentColor" />
-              <rect x="6" y="11" width="4" height="4" rx="1" ry="1" stroke="currentColor" />
-              <rect x="11" y="11" width="4" height="4" rx="1" ry="1" stroke="currentColor" />
-            </svg>
-          </button>
+          <div className="menu-container">
+            <button
+              ref={buttonRef}
+              className={`solve-btn ${isOpen ? 'active' : ''}`}
+              onClick={toggleScramble}
+              aria-label="Solve options"
+              aria-expanded={isOpen}
+              aria-haspopup="true"
+            >
+              {/* Rubik's cube icon */}
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="1" y="1" width="4" height="4" rx="1" ry="1" stroke="currentColor" />
+                <rect x="6" y="1" width="4" height="4" rx="1" ry="1" stroke="currentColor" />
+                <rect x="11" y="1" width="4" height="4" rx="1" ry="1" stroke="currentColor" />
+                <rect x="1" y="6" width="4" height="4" rx="1" ry="1" stroke="currentColor" />
+                <rect x="6" y="6" width="4" height="4" rx="1" ry="1" stroke="currentColor" />
+                <rect x="11" y="6" width="4" height="4" rx="1" ry="1" stroke="currentColor" />
+                <rect x="1" y="11" width="4" height="4" rx="1" ry="1" stroke="currentColor" />
+                <rect x="6" y="11" width="4" height="4" rx="1" ry="1" stroke="currentColor" />
+                <rect x="11" y="11" width="4" height="4" rx="1" ry="1" stroke="currentColor" />
+              </svg>
+            </button>
+
+            {isOpen && menuPos && createPortal(
+              <div
+                className="solve-menu"
+                style={{
+                  position: 'fixed',
+                  bottom: menuPos.bottom,
+                  right: menuPos.right,
+                  top: 'auto',
+                  left: 'auto',
+                  zIndex: 9999
+                }}
+              >
+                <button
+                  className={`menu-item ${solve.penalty === 'plus2' ? 'active' : ''}`}
+                  onClick={(e) => { e.stopPropagation(); onPenalty(solve.penalty === 'plus2' ? null : 'plus2') }}
+                >
+                  +2
+                </button>
+                <button
+                  className={`menu-item ${solve.penalty === 'DNF' ? 'active' : ''}`}
+                  onClick={(e) => { e.stopPropagation(); onPenalty(solve.penalty === 'DNF' ? null : 'DNF') }}
+                >
+                  DNF
+                </button>
+                <div className="menu-divider"></div>
+                <div className="menu-scramble">
+                  {solve.scramble}
+                </div>
+              </div>,
+              document.body
+            )}
+          </div>
+
           <button className="solve-btn danger" onClick={handleDelete} aria-label="Delete solve">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M18 6L6 18" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
@@ -113,9 +164,6 @@ function SolveRow({ solve, index, onDelete, onPenalty, ao5, ao12, ao100, isPbSin
           </button>
         </div>
       </div>
-      {isOpen && (
-        <div className="solve-scramble-full">{solve.scramble}</div>
-      )}
     </div>
   )
 }
@@ -125,6 +173,7 @@ const EMPTY_SOLVES: SolveEntry[] = []
 export default function SessionList() {
   const [isExpanded, setIsExpanded] = useState(false)
   const [openScrambleId, setOpenScrambleId] = useState<string | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
   const solves = useStore(s => {
     const session = s.sessions.find(sess => sess.id === s.currentSessionId)
     return session ? session.solves : EMPTY_SOLVES
@@ -135,6 +184,32 @@ export default function SessionList() {
   const isTimerRunning = useStore(s => s.isTimerRunning)
   const listRef = useRef<HTMLDivElement>(null)
   const lastItemRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element
+      // Check if click is inside menu container OR inside the portal menu
+      if (openScrambleId && !target.closest('.menu-container') && !target.closest('.solve-menu')) {
+        setOpenScrambleId(null)
+      }
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (openScrambleId && event.key === 'Escape') {
+        setOpenScrambleId(null)
+      }
+    }
+
+    if (openScrambleId) {
+      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener('keydown', handleKeyDown)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [openScrambleId])
 
   const solvesWithAverages = useMemo(() => {
     return solves.map((solve, index) => {
@@ -174,9 +249,7 @@ export default function SessionList() {
     if (!isExpanded) return
     const listElement = listRef.current
     if (listElement) {
-      // If we reverse the list, we might want to scroll to top instead of bottom?
-      // Or if we reverse it, the "latest" is at the top.
-      listElement.scrollTop = 0
+      listElement.scrollTop = listElement.scrollHeight
     }
   }, [solves, isExpanded])
 
@@ -232,8 +305,24 @@ export default function SessionList() {
     }
   }
 
+  const confirmDelete = () => {
+    if (deleteId) {
+      deleteSolve(deleteId)
+      setDeleteId(null)
+    }
+  }
+
   return (
     <div className="session-container" ref={containerRef}>
+      <ConfirmationModal
+        isOpen={!!deleteId}
+        title="delete solve?"
+        message="are you sure you want to delete this solve? this action cannot be undone."
+        confirmLabel="delete"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteId(null)}
+        isDangerous={true}
+      />
       <div
         className={`session-collapsed ${isExpanded ? 'hidden' : ''}`}
         onClick={handleExpand}
@@ -247,7 +336,7 @@ export default function SessionList() {
           <SolveRow
             solve={latest}
             index={solvesWithAverages.length}
-            onDelete={() => deleteSolve(latest.id)}
+            onDelete={() => setDeleteId(latest.id)}
             onPenalty={(p) => updateSolvePenalty(latest.id, p)}
             ao5={latest.ao5}
             ao12={latest.ao12}
@@ -275,12 +364,12 @@ export default function SessionList() {
         aria-expanded={isExpanded}
       >
         {hasSolves ? (
-          [...solvesWithAverages].reverse().map((s, idx) => (
+          solvesWithAverages.map((s, idx) => (
             <SolveRow
               key={s.id}
               solve={s}
-              index={solvesWithAverages.length - idx}
-              onDelete={() => deleteSolve(s.id)}
+              index={idx + 1}
+              onDelete={() => setDeleteId(s.id)}
               onPenalty={(p) => updateSolvePenalty(s.id, p)}
               ao5={s.ao5}
               ao12={s.ao12}

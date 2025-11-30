@@ -10,7 +10,8 @@ export async function syncSolveToCloud(entry: SolveEntry) {
         time_ms: entry.timeMs,
         scramble: entry.scramble,
         puzzle: entry.puzzleType,
-        session_id: entry.sessionId
+        session_id: entry.sessionId,
+        penalty: entry.penalty === 'plus2' ? '+2' : entry.penalty === 'DNF' ? 'DNF' : 'none'
       }
     })
     if (error) {
@@ -37,7 +38,8 @@ export async function fetchCloudSolves(): Promise<SolveEntry[] | null> {
       timeMs: row.time_ms,
       timestamp: new Date(row.created_at).getTime(),
       puzzleType: row.puzzle_type || '3x3',
-      sessionId: row.session_id // Ensure sessionId is mapped
+      sessionId: row.session_id, // Ensure sessionId is mapped
+      penalty: row.penalty === '+2' ? 'plus2' : row.penalty === 'DNF' ? 'DNF' : null
     })) as SolveEntry[]
   } catch {
     return null
@@ -118,3 +120,27 @@ export async function deleteCloudSession(id: string): Promise<boolean> {
         return false
     }
 }
+
+export async function updateSolvePenaltyInCloud(id: string, penalty: "plus2" | "DNF" | null): Promise<boolean> {
+    try {
+        const dbPenalty = penalty === 'plus2' ? '+2' : penalty === 'DNF' ? 'DNF' : 'none'
+        console.log('[sync] Updating penalty for solve:', id, 'to:', dbPenalty, '(app value:', penalty, ')')
+        
+        const { data, error } = await supabase.from('solves').update({
+            penalty: dbPenalty
+        }).eq('id', id).select()
+
+        if (error) {
+            console.error('[sync] updateSolvePenaltyInCloud error:', error)
+            return false
+        }
+        
+        console.log('[sync] updateSolvePenaltyInCloud success. Data:', data)
+        return true
+    } catch (e) {
+        console.error('[sync] updateSolvePenaltyInCloud exception:', e)
+        return false
+    }
+}
+
+

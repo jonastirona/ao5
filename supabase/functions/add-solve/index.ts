@@ -29,6 +29,7 @@ Deno.serve(async (req: Request) => {
       scramble,
       puzzle,
       session_id,
+      penalty,
     } = await req.json()
 
     const {
@@ -72,6 +73,7 @@ Deno.serve(async (req: Request) => {
       puzzle,
       time_ms,
       scramble,
+      penalty,
     })
 
     if (error) return new Response(error.message, { status: 400, headers: corsHeaders })

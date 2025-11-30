@@ -87,13 +87,24 @@ export default function About() {
                             </div>
                             <span>dnf solve</span>
                         </li>
-                        <li>
-                            <div className="key-combo">
-                                <kbd>alt / opt</kbd> + <kbd>z</kbd>
-                            </div>
-                            <span>delete last solve</span>
-                        </li>
+
                     </ul>
+
+                    <h3>statistics</h3>
+                    <div className="credits-list">
+                        <div className="credit-item">
+                            <strong>Ao5 (Average of 5)</strong>
+                            <p>Calculated by removing the best and worst times from the last 5 solves, then averaging the remaining 3.</p>
+                        </div>
+                        <div className="credit-item">
+                            <strong>Ao12 (Average of 12)</strong>
+                            <p>Calculated by removing the best and worst times from the last 12 solves, then averaging the remaining 10.</p>
+                        </div>
+                        <div className="credit-item">
+                            <strong>Ao100 (Average of 100)</strong>
+                            <p>Calculated by removing the best 5 and worst 5 times from the last 100 solves, then averaging the remaining 90.</p>
+                        </div>
+                    </div>
 
                     <h3>accessibility</h3>
                     <div className="credits-list">

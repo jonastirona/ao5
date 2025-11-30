@@ -194,6 +194,7 @@ export const useAuth = create<AuthState>((set, get) => ({
         timestamp: new Date(row.created_at).getTime(),
         puzzleType: row.puzzle_type || '3x3',
         sessionId: row.session_id,
+        penalty: row.penalty === '+2' ? 'plus2' : row.penalty === 'DNF' ? 'DNF' : null,
         synced: true
       }))
       const local = useStore.getState().getAllSolves()
@@ -264,7 +265,8 @@ export const useAuth = create<AuthState>((set, get) => ({
             time_ms: s.timeMs,
             scramble: s.scramble,
             puzzle: s.puzzleType || '333',
-            session_id: s.sessionId
+            session_id: s.sessionId,
+            penalty: s.penalty === 'plus2' ? '+2' : s.penalty === 'DNF' ? 'DNF' : 'none'
           }
         })
         if (addErr) throw addErr

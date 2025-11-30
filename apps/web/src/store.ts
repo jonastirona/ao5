@@ -22,6 +22,17 @@ export interface Session {
   solves: SolveEntry[]
 }
 
+
+
+export interface Settings {
+  inspectionEnabled: boolean
+  inspectionDuration: number // ms
+  showScrambleImage: boolean
+  scrambleImageScale: number
+  scrambleVisualization3D: boolean
+  pbEffectsEnabled: boolean
+}
+
 interface StoreState {
   // Timer & Scramble
   scramble: string
@@ -49,8 +60,10 @@ interface StoreState {
   best: number | null
   worst: number | null
   
-  lastSolveWasPB: { types: ('single' | 'ao5' | 'ao12' | 'ao100')[], id: number } | null
+  lastSolveWasPB: { types: ('single' | 'ao5' | 'ao12' | 'ao100')[], id: string } | null
   clearPBStatus: () => void
+  
+
   
   // Actions
   init: () => Promise<void>
@@ -85,19 +98,10 @@ interface StoreState {
   updateSettings: (settings: Partial<Settings>) => void
 }
 
-export interface Settings {
-  inspectionEnabled: boolean
-  inspectionDuration: number // ms
-  showScrambleImage: boolean
-  scrambleImageScale: number
-  scrambleVisualization3D: boolean
-  pbEffectsEnabled: boolean
-}
-
-const STORAGE_KEY = 'ao5.sessions.v2' // Bumped version for new schema
+const STORAGE_KEY = 'ao5_data'
 
 export const useStore = create<StoreState>((set, get) => ({
-  scramble: '',
+  scramble: 'Loading...',
   timerState: 'idle',
   elapsedMs: 0,
   inspectionLeft: null,
@@ -105,14 +109,14 @@ export const useStore = create<StoreState>((set, get) => ({
   initialized: false,
   listening: false,
   scrambleHistory: [],
-  currentScrambleIndex: 0,
+  currentScrambleIndex: -1,
   isKeyHeld: false,
   isTimerRunning: false,
   
   sessions: [],
   currentSessionId: '',
   guestSolveCount: 0,
-  concurrentUsers: 1,
+  concurrentUsers: 0,
   
   ao5: null,
   ao12: null,
@@ -122,6 +126,8 @@ export const useStore = create<StoreState>((set, get) => ({
   
   lastSolveWasPB: null,
   clearPBStatus: () => set({ lastSolveWasPB: null }),
+  
+
 
   init: async () => {
     if (get().initialized) return
@@ -355,7 +361,7 @@ export const useStore = create<StoreState>((set, get) => ({
 
         const updates: Partial<StoreState> = { sessions: updatedSessions, ...stats }
         if (pbTypes.length > 0) {
-            updates.lastSolveWasPB = { types: pbTypes, id: Date.now() }
+            updates.lastSolveWasPB = { types: pbTypes, id: Date.now().toString() }
         }
         set(updates)
         
@@ -516,14 +522,6 @@ export const useStore = create<StoreState>((set, get) => ({
                   e.preventDefault()
                   const newPenalty = lastSolve.penalty === 'DNF' ? null : 'DNF'
                   get().updateSolvePenalty(lastSolve.id, newPenalty)
-              }
-              
-              // Alt + Z: Delete last solve
-              if (e.code === 'KeyZ') {
-                  e.preventDefault()
-                  if (confirm('Delete last solve?')) {
-                      get().deleteSolve(lastSolve.id)
-                  }
               }
           }
       }
@@ -794,28 +792,22 @@ export const useStore = create<StoreState>((set, get) => ({
     set({ sessions, ...stats })
     
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ sessions, currentSessionId: state.currentSessionId }))
-    } catch {
-      // Ignore storage errors
-    }
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ 
+            sessions, 
+            currentSessionId: state.currentSessionId,
+            lastSessionId: state.currentSessionId,
+            guestSolveCount: state.guestSolveCount 
+        }))
+    } catch {}
 
+    // Cloud sync
     void (async () => {
-      try {
-        const { data } = await supabase.auth.getSession()
-        if (data.session?.user) {
-          console.log('[store] Deleting solve from cloud:', id)
-          const success = await deleteSolveFromCloud(id)
-          if (success) {
-              console.log('[store] Successfully deleted solve from cloud')
-          } else {
-              console.error('[store] Failed to delete solve from cloud (returned false)')
-          }
-        } else {
-            console.log('[store] Not logged in, skipping cloud delete')
-        }
-      } catch (e) {
-          console.error('[store] Error in deleteSolve cloud sync:', e)
-      }
+        try {
+            const { data } = await supabase.auth.getSession()
+            if (data.session?.user) {
+                await deleteSolveFromCloud(id)
+            }
+        } catch (e) { console.error(e) }
     })()
   },
   
@@ -824,21 +816,35 @@ export const useStore = create<StoreState>((set, get) => ({
       const session = state.sessions.find(s => s.id === state.currentSessionId)
       if (!session) return
 
-      const solves = session.solves.map(s => s.id === id ? { ...s, penalty } : s)
-      const sessions = state.sessions.map(s => 
-        s.id === state.currentSessionId ? { ...s, solves } : s
+      const solves = session.solves.map(s => 
+          s.id === id ? { ...s, penalty } : s
       )
       
+      const sessions = state.sessions.map(s => 
+          s.id === state.currentSessionId ? { ...s, solves } : s
+      )
       const stats = calculateAverages(solves)
       set({ sessions, ...stats })
       
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ sessions, currentSessionId: state.currentSessionId }))
-      } catch {
-        // Ignore storage errors
-      }
-      
-      // TODO: Sync penalty update to cloud
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({ 
+              sessions, 
+              currentSessionId: state.currentSessionId,
+              lastSessionId: state.currentSessionId,
+              guestSolveCount: state.guestSolveCount 
+          }))
+      } catch {}
+
+      // Cloud sync
+      void (async () => {
+          try {
+              const { data } = await supabase.auth.getSession()
+              if (data.session?.user) {
+                  console.log('[store] Calling updateSolvePenaltyInCloud for:', id, penalty)
+                  await import('./cloudSync').then(m => m.updateSolvePenaltyInCloud(id, penalty))
+              }
+          } catch (e) { console.error(e) }
+      })()
   },
 
   setSolveSynced: (id: string, synced: boolean) => {
