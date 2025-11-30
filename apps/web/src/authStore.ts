@@ -381,27 +381,31 @@ async function ensureProfileAndHydration(userId: string): Promise<void> {
       console.log('[auth] Background setup start for user:', userId)
       const fallback = `user_${userId.substring(0, 8)}`
       // Upsert to be idempotent
-      const { error: upsertError } = await supabase
-        .from('profiles')
-        .upsert({ id: userId, username: fallback }, { onConflict: 'id', ignoreDuplicates: true })
-      if (upsertError) console.warn('[auth] Profile upsert warning:', upsertError)
-      
-      // Fetch theme preference
-      const { data: profile } = await supabase
+      // Check if profile exists first to avoid overwriting with fallback
+      let { data: profile } = await supabase
         .from('profiles')
         .select('theme, username')
         .eq('id', userId)
-        .single()
-        
+        .maybeSingle()
+
+      if (!profile) {
+          console.log('[auth] No profile found, creating default')
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .insert({ id: userId, username: fallback })
+          
+          if (insertError) {
+              console.warn('[auth] Profile creation failed:', insertError)
+          } else {
+              profile = { username: fallback, theme: null }
+          }
+      }
+
       if (profile) {
           useAuth.setState({ username: profile.username })
           if (profile.theme) {
               useStore.getState().setTheme(profile.theme)
           }
-      }
-
-      if (profile?.theme) {
-          useStore.getState().setTheme(profile.theme)
       }
 
       // Auto-sync local work before hydrating
