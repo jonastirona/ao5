@@ -55,19 +55,19 @@ const TOUR_STEPS: TourStep[] = [
                     </li>
                     <li>
                         <div className="key-combo">
-                            <kbd>alt</kbd> + <kbd>2</kbd>
+                            <kbd>alt / opt</kbd> + <kbd>2</kbd>
                         </div>
                         <span>+2 penalty</span>
                     </li>
                     <li>
                         <div className="key-combo">
-                            <kbd>alt</kbd> + <kbd>d</kbd>
+                            <kbd>alt / opt</kbd> + <kbd>d</kbd>
                         </div>
                         <span>dnf solve</span>
                     </li>
                     <li>
                         <div className="key-combo">
-                            <kbd>alt</kbd> + <kbd>z</kbd>
+                            <kbd>alt / opt</kbd> + <kbd>z</kbd>
                         </div>
                         <span>delete last solve</span>
                     </li>

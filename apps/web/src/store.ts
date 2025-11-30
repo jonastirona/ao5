@@ -1016,12 +1016,5 @@ export const useStore = create<StoreState>((set, get) => ({
       })()
   },
 
-  setTheme: (theme: string) => {
-      set({ currentTheme: theme })
-      try {
-          localStorage.setItem('ao5.theme', theme)
-      } catch {
-          // Ignore storage errors
-      }
-  }
+
 }))
