@@ -11,6 +11,7 @@ export interface SolveEntry extends Solve {
   timestamp: number
   puzzleType: PuzzleType
   sessionId?: string
+  synced?: boolean
 }
 
 export interface Session {
@@ -66,6 +67,7 @@ interface StoreState {
   // Solve Actions
   deleteSolve: (id: string) => void
   updateSolvePenalty: (id: string, penalty: "plus2" | "DNF" | null) => void
+  setSolveSynced: (id: string, synced: boolean) => void
 
   hydrateSolves: (entries: SolveEntry[], cloudSessions?: { id: string, name: string, puzzleType: string }[]) => void // Legacy/Cloud hydration
   getAllSolves: () => SolveEntry[]
@@ -280,7 +282,8 @@ export const useStore = create<StoreState>((set, get) => ({
           timestamp: Date.now(),
           puzzleType: session.puzzleType,
           sessionId: session.id,
-          penalty: penalty || null
+          penalty: penalty || null,
+          synced: false
         }
 
         const updatedSolves = [...session.solves, entry]
@@ -345,6 +348,7 @@ export const useStore = create<StoreState>((set, get) => ({
             const { data } = await supabase.auth.getSession()
             if (data.session?.user) {
               await syncSolveToCloud(entry)
+              get().setSolveSynced(entry.id, true)
             }
           } catch (error) {
             console.error('[store] Failed to sync solve:', error)
@@ -742,6 +746,25 @@ export const useStore = create<StoreState>((set, get) => ({
       }
       
       // TODO: Sync penalty update to cloud
+  },
+
+  setSolveSynced: (id: string, synced: boolean) => {
+      const state = get()
+      // Find session containing the solve
+      const session = state.sessions.find(s => s.solves.some(solve => solve.id === id))
+      if (!session) return
+
+      const solves = session.solves.map(s => s.id === id ? { ...s, synced } : s)
+      const sessions = state.sessions.map(s => 
+          s.id === session.id ? { ...s, solves } : s
+      )
+      
+      set({ sessions })
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ sessions, currentSessionId: state.currentSessionId }))
+      } catch {
+        // Ignore
+      }
   },
 
   getAllSolves: () => {

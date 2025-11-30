@@ -9,7 +9,8 @@ export async function syncSolveToCloud(entry: SolveEntry) {
         id: entry.id,
         time_ms: entry.timeMs,
         scramble: entry.scramble,
-        puzzle: '3x3'
+        puzzle: entry.puzzleType,
+        session_id: entry.sessionId
       }
     })
     if (error) {

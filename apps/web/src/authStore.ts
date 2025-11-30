@@ -24,6 +24,7 @@ interface AuthState {
   // Offline/local solves sync prompt state
   pendingLocalOnlyCount: number
   shouldPromptSync: boolean
+  lastSyncTime: number | null
 
   init: () => Promise<void>
   signUpWithEmailPassword: (email: string, password: string, username: string) => Promise<void>
@@ -46,6 +47,7 @@ export const useAuth = create<AuthState>((set, get) => ({
   error: null,
   pendingLocalOnlyCount: 0,
   shouldPromptSync: false,
+  lastSyncTime: null,
 
   init: async () => {
     // Prevent multiple simultaneous initializations
@@ -164,11 +166,12 @@ export const useAuth = create<AuthState>((set, get) => ({
         timeMs: row.time_ms,
         timestamp: new Date(row.created_at).getTime(),
         puzzleType: row.puzzle_type || '3x3',
-        sessionId: row.session_id
+        sessionId: row.session_id,
+        synced: true
       }))
       const local = useStore.getState().getAllSolves()
       // Identify local-only solves to optionally sync on user confirmation
-      const localOnly = local.filter(s => !mapped.some(m => m.id === s.id))
+      const localOnly = local.filter(s => !mapped.some(m => m.id === s.id)).map(s => ({ ...s, synced: false }))
       if (localOnly.length) {
         console.log('[auth] Found local-only solves pending sync:', localOnly.length)
         // Set prompt state if user is authenticated
@@ -181,6 +184,7 @@ export const useAuth = create<AuthState>((set, get) => ({
       const merged = [...mapped, ...localOnly]
       console.log('[auth] hydrating solves merged count:', merged.length)
       useStore.getState().hydrateSolves(merged, cloudSessions || undefined)
+      set({ lastSyncTime: Date.now() })
     } catch (error) {
       console.warn('[auth] hydrateFromCloud error:', error)
     } finally {
@@ -209,16 +213,35 @@ export const useAuth = create<AuthState>((set, get) => ({
         return
       }
       console.log('[auth] Syncing local-only solves to cloud:', localOnly.length)
+      
+      // 1. Sync Sessions First
+      const sessions = useStore.getState().sessions
+      const userId = get().user?.id
+      if (userId) {
+          const { error: sessionErr } = await supabase.from('sessions').upsert(
+              sessions.map(s => ({
+                  id: s.id,
+                  user_id: userId,
+                  session_name: s.name,
+                  puzzle: s.puzzleType,
+                  created_at: new Date().toISOString() // Idempotent upsert, created_at might be ignored if exists or set to now
+              }))
+          )
+          if (sessionErr) console.warn('[auth] Failed to sync sessions:', sessionErr)
+      }
+
       for (const s of localOnly) {
         const { error: addErr } = await supabase.functions.invoke('add-solve', {
           body: {
             id: s.id,
             time_ms: s.timeMs,
             scramble: s.scramble,
-            puzzle: s.puzzleType || '333'
+            puzzle: s.puzzleType || '333',
+            session_id: s.sessionId
           }
         })
         if (addErr) throw addErr
+        useStore.getState().setSolveSynced(s.id, true)
       }
       // After successful upload, refresh hydration and clear prompt
       set({ pendingLocalOnlyCount: 0, shouldPromptSync: false })
@@ -341,6 +364,7 @@ window.addEventListener('online', () => {
       const { data } = await supabase.auth.getSession()
       if (data.session?.user) {
         console.log('[auth] Online event detected, attempting background hydration')
+        await useAuth.getState().syncLocalSolvesToCloud()
         await useAuth.getState().hydrateFromCloud()
       }
     } catch (error) {

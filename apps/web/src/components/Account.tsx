@@ -133,7 +133,7 @@ export default function Account() {
 
   return (
     <div className="account-container">
-      <Link to="/" className="close-btn" style={{ position: 'absolute', top: '2rem', right: '2rem' }}>×</Link>
+
       <div className="account-card">
         {initializing && (
           <div className="loading-state">
@@ -144,14 +144,17 @@ export default function Account() {
 
         {!initializing && user ? (
           <div className="profile-view">
-            <div className="profile-header">
-              <div className="avatar-placeholder">
-                {user.email?.charAt(0).toUpperCase()}
+            <div className="profile-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div className="avatar-placeholder">
+                  {user.email?.charAt(0).toUpperCase()}
+                </div>
+                <div className="profile-info">
+                  <h2>{user.email}</h2>
+                  <p>member since {new Date(user.created_at || Date.now()).getFullYear()}</p>
+                </div>
               </div>
-              <div className="profile-info">
-                <h2>{user.email}</h2>
-                <p>member since {new Date(user.created_at || Date.now()).getFullYear()}</p>
-              </div>
+              <Link to="/" className="close-btn">×</Link>
             </div>
 
             {globalStats && (

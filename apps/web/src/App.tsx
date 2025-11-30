@@ -18,6 +18,7 @@ import TourOverlay from './components/TourOverlay'
 import PBAnimation from './components/PBAnimation'
 
 import GlobalShortcuts from './components/GlobalShortcuts'
+import NetworkStatus from './components/NetworkStatus'
 
 function AppContent() {
   // Initialize auth/session on app start
@@ -82,6 +83,7 @@ function AppContent() {
     <>
       <GlobalShortcuts openOnboarding={handleStartTour} />
       <PBAnimation />
+      <NetworkStatus />
       <div className="layout">
 
         <header className="header">
