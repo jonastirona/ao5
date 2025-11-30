@@ -1,13 +1,14 @@
 import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { useStore } from '../store'
 
 export default function About() {
+    const concurrentUsers = useStore(s => s.concurrentUsers)
     const [globalStats, setGlobalStats] = useState({
         totalSolves: 0,
         totalUsers: 0,
         totalTime: 0,
-        concurrentUsers: 1
     })
 
     useEffect(() => {
@@ -19,12 +20,12 @@ export default function About() {
                 const { data: timeData } = await supabase.from('solves').select('time_ms')
                 const totalTime = timeData?.reduce((acc, curr) => acc + (curr.time_ms || 0), 0) || 0
 
-                setGlobalStats({
+                setGlobalStats(prev => ({
+                    ...prev,
                     totalSolves: solvesCount || 0,
                     totalUsers: usersCount || 0,
                     totalTime,
-                    concurrentUsers: 1 // Placeholder as we don't have realtime presence yet
-                })
+                }))
             } catch (e) {
                 console.error('Failed to fetch global stats', e)
             }
@@ -60,7 +61,7 @@ export default function About() {
                         </div>
                         <div className="stat-card">
                             <label>concurrent</label>
-                            <div className="value">{globalStats.concurrentUsers.toLocaleString()}</div>
+                            <div className="value">{concurrentUsers.toLocaleString()}</div>
                         </div>
                     </div>
 

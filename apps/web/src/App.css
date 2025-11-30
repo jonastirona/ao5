@@ -3000,3 +3000,32 @@ kbd {
     opacity: 0;
   }
 }
+/* Account Page */
+.account-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  padding: var(--space-3);
+  overflow-y: auto;
+}
+
+.account-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: var(--space-4);
+  width: 100%;
+  max-width: 800px; /* Wider landscape layout */
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ensure form inputs take full width in the wider card */
+.account-card .input {
+  width: 100%;
+}

@@ -17,10 +17,12 @@ interface AuthState {
     created_at?: string
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     user_metadata?: { [key: string]: any }
+    app_metadata?: { provider?: string; providers?: string[] }
   } | null
   session: Session | null
   initializing: boolean
   error: string | null
+  username: string | null
   // Offline/local solves sync prompt state
   pendingLocalOnlyCount: number
   shouldPromptSync: boolean
@@ -38,8 +40,11 @@ interface AuthState {
   dismissSyncPrompt: () => void
   updateEmail: (email: string) => Promise<void>
   updatePassword: (password: string) => Promise<void>
+  resetPassword: (email: string) => Promise<void>
   deleteAccount: () => Promise<void>
   clearUserData: () => Promise<void>
+  checkUsernameUnique: (username: string) => Promise<boolean>
+  updateUsername: (username: string) => Promise<void>
 }
 
 export const useAuth = create<AuthState>((set, get) => ({
@@ -47,6 +52,7 @@ export const useAuth = create<AuthState>((set, get) => ({
   session: null,
   initializing: true,
   error: null,
+  username: null,
   pendingLocalOnlyCount: 0,
   shouldPromptSync: false,
   lastSyncTime: null,
@@ -98,22 +104,35 @@ export const useAuth = create<AuthState>((set, get) => ({
 
   signUpWithEmailPassword: async (email, password, username) => {
     set({ error: null })
+    
+    // Check uniqueness first
+    const isUnique = await get().checkUsernameUnique(username)
+    if (!isUnique) {
+        const err = 'Username already taken'
+        set({ error: err })
+        throw new Error(err)
+    }
+
     const { data, error } = await supabase.auth.signUp({ email, password })
     if (error) {
       set({ error: error.message })
-      return
+      throw error
     }
     const userId = data.user?.id
     if (userId) {
       // Upsert profile row for the user
       await supabase.from('profiles').upsert({ id: userId, username }).select('id').single()
+      set({ username })
     }
   },
 
   signInWithEmailPassword: async (email, password) => {
     set({ error: null })
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) set({ error: error.message })
+    if (error) {
+      set({ error: error.message })
+      throw error
+    }
   },
 
   signInWithGoogle: async () => {
@@ -122,7 +141,10 @@ export const useAuth = create<AuthState>((set, get) => ({
       provider: 'google',
       options: { redirectTo: window.location.origin }
     })
-    if (error) set({ error: error.message })
+    if (error) {
+      set({ error: error.message })
+      throw error
+    }
   },
 
   signOut: async () => {
@@ -261,13 +283,23 @@ export const useAuth = create<AuthState>((set, get) => ({
   dismissSyncPrompt: () => set({ shouldPromptSync: false }),
 
   updateEmail: async (email: string) => {
-      const { error } = await supabase.auth.updateUser({ email })
+      const { error } = await supabase.auth.updateUser(
+        { email },
+        { emailRedirectTo: `${window.location.origin}/account` }
+      )
       if (error) throw error
   },
 
   updatePassword: async (password: string) => {
       const { error } = await supabase.auth.updateUser({ password })
       if (error) throw error
+  },
+
+  resetPassword: async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/account?reset=true`,
+    })
+    if (error) throw error
   },
 
   deleteAccount: async () => {
@@ -305,6 +337,39 @@ export const useAuth = create<AuthState>((set, get) => ({
       if (!userId) return
       await supabase.from('solves').delete().eq('user_id', userId)
       useStore.getState().clearSolves()
+  },
+
+  checkUsernameUnique: async (username: string) => {
+      // Case insensitive check usually preferred, but let's stick to exact or simple ilike
+      const { data, error } = await supabase
+          .from('profiles')
+          .select('id')
+          .ilike('username', username)
+          .maybeSingle()
+      
+      if (error) {
+          console.error('[auth] checkUsernameUnique error:', error)
+          return false // Fail safe? Or allow? Let's assume taken if error to be safe
+      }
+      return !data // If data exists, it's taken
+  },
+
+  updateUsername: async (username: string) => {
+      const userId = get().user?.id
+      if (!userId) return
+
+      const isUnique = await get().checkUsernameUnique(username)
+      if (!isUnique) {
+          throw new Error('Username already taken')
+      }
+
+      const { error } = await supabase
+          .from('profiles')
+          .update({ username })
+          .eq('id', userId)
+      
+      if (error) throw error
+      set({ username })
   }
 }))
 
@@ -318,18 +383,21 @@ async function ensureProfileAndHydration(userId: string): Promise<void> {
       // Upsert to be idempotent
       const { error: upsertError } = await supabase
         .from('profiles')
-        .upsert({ id: userId, username: fallback })
+        .upsert({ id: userId, username: fallback }, { onConflict: 'id', ignoreDuplicates: true })
       if (upsertError) console.warn('[auth] Profile upsert warning:', upsertError)
       
       // Fetch theme preference
       const { data: profile } = await supabase
         .from('profiles')
-        .select('theme')
+        .select('theme, username')
         .eq('id', userId)
         .single()
         
-      if (profile?.theme) {
-          useStore.getState().setTheme(profile.theme)
+      if (profile) {
+          useAuth.setState({ username: profile.username })
+          if (profile.theme) {
+              useStore.getState().setTheme(profile.theme)
+          }
       }
 
       if (profile?.theme) {

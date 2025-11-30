@@ -39,6 +39,7 @@ interface StoreState {
   sessions: Session[]
   currentSessionId: string
   guestSolveCount: number
+  concurrentUsers: number
   
   // Computed Stats (for current session)
   ao5: number | null
@@ -52,6 +53,7 @@ interface StoreState {
   
   // Actions
   init: () => Promise<void>
+  initPresence: () => void
   startListening: () => void
   stop: () => Promise<void>
   reset: () => Promise<void>
@@ -108,6 +110,7 @@ export const useStore = create<StoreState>((set, get) => ({
   sessions: [],
   currentSessionId: '',
   guestSolveCount: 0,
+  concurrentUsers: 1,
   
   ao5: null,
   ao12: null,
@@ -378,6 +381,27 @@ export const useStore = create<StoreState>((set, get) => ({
     })
     timer.updateSettings({ inspectionDurationMs: settings.inspectionDuration })
     set({ timer })
+  },
+
+  initPresence: () => {
+      // Realtime concurrent users
+      const channel = supabase.channel('online-users', {
+          config: {
+              presence: {
+                  key: crypto.randomUUID(),
+              },
+          },
+      })
+
+      channel.on('presence', { event: 'sync' }, () => {
+          const state = channel.presenceState()
+          const count = Object.keys(state).length
+          set({ concurrentUsers: count })
+      }).subscribe(async (status) => {
+          if (status === 'SUBSCRIBED') {
+              await channel.track({ online_at: new Date().toISOString() })
+          }
+      })
   },
 
   startListening: () => {

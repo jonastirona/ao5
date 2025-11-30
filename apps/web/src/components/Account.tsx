@@ -5,6 +5,8 @@ import { useStore } from '../store'
 
 type Toast = { id: string; message: string; tone: 'success' | 'error' | 'info' }
 
+import ConfirmationModal from './ConfirmationModal'
+
 export default function Account() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -22,12 +24,34 @@ export default function Account() {
 
   const getAllSolves = useStore(s => s.getAllSolves)
 
-  const [mode, setMode] = useState<'profile' | 'login' | 'signup'>(user ? 'profile' : 'login')
+  const [mode, setMode] = useState<'profile' | 'login' | 'signup' | 'forgot-password'>(user ? 'profile' : 'login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [username, setUsername] = useState('')
+
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+
+  const isGoogleUser = user?.app_metadata?.provider === 'google' || user?.app_metadata?.providers?.includes('google')
   const [busy, setBusy] = useState(false)
   const [toasts, setToasts] = useState<Toast[]>([])
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    confirmLabel: string
+    onConfirm: () => void
+    isDangerous?: boolean
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmLabel: '',
+    onConfirm: () => { },
+    isDangerous: false
+  })
 
   useEffect(() => { if (error) addToast(error, 'error') }, [error])
   // Keep mode synced with auth state
@@ -91,7 +115,7 @@ export default function Account() {
     setBusy(true)
     try {
       await signUp(email, password, username)
-      addToast('Account created! Please check your email and click the verification link to complete signup.', 'success')
+      addToast('account created!', 'success')
       setMode('login')
       setEmail('')
       setPassword('')
@@ -131,6 +155,21 @@ export default function Account() {
     }
   }
 
+  async function handleResetPassword(ev: React.FormEvent) {
+    ev.preventDefault()
+    if (!email) return
+    setBusy(true)
+    try {
+      await useAuth.getState().resetPassword(email)
+      addToast('reset link sent to email', 'success')
+      setMode('login')
+    } catch {
+      addToast('failed to send reset link', 'error')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <div className="account-container">
 
@@ -150,8 +189,8 @@ export default function Account() {
                   {user.email?.charAt(0).toUpperCase()}
                 </div>
                 <div className="profile-info">
-                  <h2>{user.email}</h2>
-                  <p>member since {new Date(user.created_at || Date.now()).getFullYear()}</p>
+                  <h2>{useAuth.getState().username || user.email}</h2>
+                  <p>member since {new Date(user.created_at || Date.now()).toLocaleString('default', { month: 'long', year: 'numeric' }).toLowerCase()}</p>
                 </div>
               </div>
               <Link to="/" className="close-btn">×</Link>
@@ -175,27 +214,32 @@ export default function Account() {
             </div>
 
             <div className="settings-group" style={{ marginTop: '2rem' }}>
-              <h3>security</h3>
+              <h3>profile</h3>
               <div className="form-group">
-                <label>update email</label>
-                <div className="input-group" style={{ display: 'flex', gap: '0.5rem' }}>
+                <label>change username</label>
+                <div className="input-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   <input
                     className="input"
-                    placeholder="new email"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
+                    placeholder="new username"
+                    value={username}
+                    onChange={e => setUsername(e.target.value)}
                   />
                   <button
-                    className="btn secondary"
-                    disabled={!email || busy}
+                    className="btn secondary full-width"
+                    disabled={!username || username.length < 2 || busy}
                     onClick={async () => {
                       setBusy(true)
                       try {
-                        await useAuth.getState().updateEmail(email)
-                        addToast('confirmation email sent!', 'success')
-                        setEmail('')
-                      } catch {
-                        addToast('failed to update email', 'error')
+                        await useAuth.getState().updateUsername(username)
+                        addToast('username updated!', 'success')
+                        setUsername('')
+                      } catch (err: any) {
+                        console.error(err)
+                        if (err.message?.includes('duplicate key') || err.message?.includes('unique constraint')) {
+                          addToast('username already taken', 'error')
+                        } else {
+                          addToast(err.message || 'failed to update username', 'error')
+                        }
                       } finally {
                         setBusy(false)
                       }
@@ -205,37 +249,102 @@ export default function Account() {
                   </button>
                 </div>
               </div>
-              <div className="form-group">
-                <label>update password</label>
-                <div className="input-group" style={{ display: 'flex', gap: '0.5rem' }}>
-                  <input
-                    className="input"
-                    type="password"
-                    placeholder="new password"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                  />
-                  <button
-                    className="btn secondary"
-                    disabled={!password || password.length < 6 || busy}
-                    onClick={async () => {
-                      setBusy(true)
-                      try {
-                        await useAuth.getState().updatePassword(password)
-                        addToast('password updated!', 'success')
-                        setPassword('')
-                      } catch {
-                        addToast('failed to update password', 'error')
-                      } finally {
-                        setBusy(false)
-                      }
-                    }}
-                  >
-                    Update
-                  </button>
+            </div>
+
+            {!isGoogleUser && (
+              <div className="settings-group" style={{ marginTop: '2rem' }}>
+                <h3>security</h3>
+                <div className="form-group">
+                  <label>update email</label>
+                  <div className="input-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <input
+                      className="input"
+                      placeholder="new email"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                    />
+                    <button
+                      className="btn secondary full-width"
+                      disabled={!email || busy}
+                      onClick={async () => {
+                        setBusy(true)
+                        try {
+                          await useAuth.getState().updateEmail(email)
+                          addToast('confirmation email sent!', 'success')
+                          setEmail('')
+                        } catch (err: any) {
+                          console.error(err)
+                          if (err?.message?.includes('already been registered') || err?.message?.includes('already registered')) {
+                            addToast('email already in use', 'error')
+                          } else {
+                            addToast('failed to update email', 'error')
+                          }
+                        } finally {
+                          setBusy(false)
+                        }
+                      }}
+                    >
+                      update
+                    </button>
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label>change password</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <input
+                      className="input"
+                      type="password"
+                      placeholder="current password"
+                      value={currentPassword}
+                      onChange={e => setCurrentPassword(e.target.value)}
+                    />
+                    <input
+                      className="input"
+                      type="password"
+                      placeholder="new password"
+                      value={newPassword}
+                      onChange={e => setNewPassword(e.target.value)}
+                    />
+                    <input
+                      className="input"
+                      type="password"
+                      placeholder="confirm new password"
+                      value={confirmPassword}
+                      onChange={e => setConfirmPassword(e.target.value)}
+                    />
+                    <button
+                      className="btn secondary full-width"
+                      disabled={!currentPassword || !newPassword || !confirmPassword || newPassword.length < 6 || busy}
+                      onClick={async () => {
+                        if (newPassword !== confirmPassword) {
+                          addToast('passwords do not match', 'error')
+                          return
+                        }
+                        setBusy(true)
+                        try {
+                          // Verify current password by signing in
+                          if (user?.email) {
+                            await signIn(user.email, currentPassword)
+                          }
+                          await useAuth.getState().updatePassword(newPassword)
+                          addToast('password updated!', 'success')
+                          setCurrentPassword('')
+                          setNewPassword('')
+                          setConfirmPassword('')
+                        } catch (err) {
+                          console.error(err)
+                          addToast('failed to update password (check current password)', 'error')
+                        } finally {
+                          setBusy(false)
+                        }
+                      }}
+                    >
+                      update
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             <div className="settings-group danger-zone" style={{ marginTop: '2rem', borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
               <h3 style={{ color: 'var(--error)' }}></h3>
@@ -247,17 +356,26 @@ export default function Account() {
                   </div>
                   <button
                     className="btn danger small"
-                    onClick={async () => {
-                      if (!confirm('are you sure you want to delete ALL your solves? this cannot be undone.')) return
-                      setBusy(true)
-                      try {
-                        await useAuth.getState().clearUserData()
-                        addToast('all data deleted', 'success')
-                      } catch {
-                        addToast('failed to delete data', 'error')
-                      } finally {
-                        setBusy(false)
-                      }
+                    onClick={() => {
+                      setConfirmModal({
+                        isOpen: true,
+                        title: 'delete all data?',
+                        message: 'are you sure you want to delete ALL your solves? this cannot be undone.',
+                        confirmLabel: 'delete data',
+                        isDangerous: true,
+                        onConfirm: async () => {
+                          setConfirmModal(prev => ({ ...prev, isOpen: false }))
+                          setBusy(true)
+                          try {
+                            await useAuth.getState().clearUserData()
+                            addToast('all data deleted', 'success')
+                          } catch {
+                            addToast('failed to delete data', 'error')
+                          } finally {
+                            setBusy(false)
+                          }
+                        }
+                      })
                     }}
                   >
                     delete data
@@ -270,18 +388,27 @@ export default function Account() {
                   </div>
                   <button
                     className="btn danger small"
-                    onClick={async () => {
-                      if (!confirm('are you sure you want to delete your account? this cannot be undone.')) return
-                      setBusy(true)
-                      try {
-                        await useAuth.getState().deleteAccount()
-                        addToast('account deleted', 'success')
-                        navigate('/')
-                      } catch {
-                        addToast('failed to delete account', 'error')
-                      } finally {
-                        setBusy(false)
-                      }
+                    onClick={() => {
+                      setConfirmModal({
+                        isOpen: true,
+                        title: 'delete account?',
+                        message: 'are you sure you want to delete your account? this cannot be undone.',
+                        confirmLabel: 'delete account',
+                        isDangerous: true,
+                        onConfirm: async () => {
+                          setConfirmModal(prev => ({ ...prev, isOpen: false }))
+                          setBusy(true)
+                          try {
+                            await useAuth.getState().deleteAccount()
+                            addToast('account deleted', 'success')
+                            navigate('/')
+                          } catch {
+                            addToast('failed to delete account', 'error')
+                          } finally {
+                            setBusy(false)
+                          }
+                        }
+                      })
                     }}
                   >
                     delete account
@@ -324,9 +451,24 @@ export default function Account() {
                 <div className="auth-actions">
                   <button className="btn primary full-width" type="submit" disabled={!canSubmitLogin || busy}>log in</button>
                   <button className="btn ghost full-width" type="button" onClick={handleGoogle} disabled={busy}>log in with google</button>
+                  <button className="btn text full-width" type="button" onClick={() => setMode('forgot-password')} disabled={busy} style={{ fontSize: '12px', marginTop: '0.5rem' }}>forgot password?</button>
                 </div>
                 <div className="auth-footer">
                   <p>don't have an account? <button type="button" onClick={() => setMode('signup')}>sign up</button></p>
+                </div>
+              </form>
+            ) : mode === 'forgot-password' ? (
+              <form className="auth-form" onSubmit={handleResetPassword}>
+                <h2>reset password</h2>
+                <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+                  enter your email to receive a password reset link. if you signed in with google, please sign in with google directly.
+                </p>
+                <div className="form-group">
+                  <input className="input" placeholder="email" value={email} onChange={e => setEmail(e.target.value)} />
+                </div>
+                <div className="auth-actions">
+                  <button className="btn primary full-width" type="submit" disabled={!email || busy}>send reset link</button>
+                  <button className="btn ghost full-width" type="button" onClick={() => setMode('login')} disabled={busy}>back to login</button>
                 </div>
               </form>
             ) : (
@@ -359,6 +501,16 @@ export default function Account() {
           <div key={t.id} className={`toast ${t.tone}`}>{t.message}</div>
         ))}
       </div>
+
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmLabel={confirmModal.confirmLabel}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        isDangerous={confirmModal.isDangerous}
+      />
     </div>
   )
 }

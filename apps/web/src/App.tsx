@@ -26,6 +26,7 @@ function AppContent() {
   // Initialize auth/session on app start
   useEffect(() => {
     useAuth.getState().init()
+    useStore.getState().initPresence()
   }, [])
   const isKeyHeld = useStore(s => s.isKeyHeld)
   const isTimerRunning = useStore(s => s.isTimerRunning)
