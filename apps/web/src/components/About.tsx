@@ -141,6 +141,10 @@ export default function About() {
 
                 <div className="about-footer">
                     <p>v0.1.0 • <a href="https://github.com/jonastirona/ao5" target="_blank" rel="noopener noreferrer">GitHub</a></p>
+                    <div className="legal-links">
+                        <Link to="/privacy" className="legal-link">privacy policy</Link>
+                        <Link to="/terms" className="legal-link">terms of service</Link>
+                    </div>
                 </div>
             </div>
         </div>

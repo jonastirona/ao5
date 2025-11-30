@@ -112,7 +112,7 @@ export default function Support() {
                 {activeTab === 'feedback' && (
                     <div className="support-section">
                         <h3>send feedback</h3>
-                        <p>found a bug or have a feature request? let us know!</p>
+                        <p>found a bug, have a feature request, or want to contact us? let us know!</p>
 
                         {isSuccess ? (
                             <div className="feedback-success">
@@ -152,7 +152,7 @@ export default function Support() {
 
                                         {isDropdownOpen && (
                                             <div className="custom-select-options">
-                                                {['Feature Request', 'Bug Report', 'Other'].map((type) => (
+                                                {['Feature Request', 'Bug Report', 'Contact', 'Other'].map((type) => (
                                                     <div
                                                         key={type}
                                                         className={`custom-option ${feedbackType === type ? 'selected' : ''}`}

@@ -14,6 +14,8 @@ import { useStore } from './store'
 
 import About from './components/About'
 import Support from './components/Support'
+import PrivacyPolicy from './components/PrivacyPolicy'
+import TermsOfService from './components/TermsOfService'
 import TourOverlay from './components/TourOverlay'
 import PBAnimation from './components/PBAnimation'
 
@@ -176,6 +178,8 @@ function AppContent() {
           <Route path="/settings" element={<Settings />} />
           <Route path="/about" element={<About />} />
           <Route path="/support" element={<Support />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
           <Route path="/account" element={<Account />} />
         </Routes>
       </div>
