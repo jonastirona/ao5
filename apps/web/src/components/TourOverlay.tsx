@@ -172,7 +172,7 @@ export default function TourOverlay({ isOpen, onClose }: TourOverlayProps) {
             // The card is 320px wide + padding.
             // ADJUST WELCOME SPOTLIGHT WIDTH HERE
             const width = 320 // User preference
-            const height = step.target === 'shortcuts-info' ? 385 : 260 // Approximate height
+            const height = step.target === 'shortcuts-info' ? 385 : 170 // Approximate height
             return {
                 top: window.innerHeight / 2 - height / 2,
                 left: window.innerWidth / 2 - width / 2,

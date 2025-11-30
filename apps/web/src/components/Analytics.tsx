@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useStore } from '../store'
-import { SUPPORTED_EVENTS } from 'core'
+import { SUPPORTED_EVENTS, calculateAverages, getBestAverage } from 'core'
 import Plot from 'react-plotly.js'
 import ShareModal from './ShareModal'
 import {
@@ -135,6 +135,12 @@ export default function Analytics() {
 
         if (times.length === 0) return null
 
+        const sortedTimes = [...times].sort((a, b) => a - b)
+        const mid = Math.floor(sortedTimes.length / 2)
+        const median = sortedTimes.length % 2 !== 0
+            ? sortedTimes[mid]
+            : (sortedTimes[mid - 1] + sortedTimes[mid]) / 2
+
         const best = Math.min(...times)
         const worst = Math.max(...times)
         const mean = times.reduce((a, b) => a + b, 0) / times.length
@@ -147,7 +153,18 @@ export default function Analytics() {
         const first = validSolves[0].timeMs + (validSolves[0].penalty === 'plus2' ? 2000 : 0)
         const improvement = first - best
 
-        return { best, worst, mean, stdDev, count: filteredSolves.length, totalTime, improvement }
+        const currentAverages = calculateAverages(validSolves)
+        const bestAo5 = getBestAverage(validSolves, 5)
+        const bestAo12 = getBestAverage(validSolves, 12)
+        const bestAo100 = getBestAverage(validSolves, 100)
+
+        return {
+            best, worst, mean, median, stdDev, count: filteredSolves.length, totalTime, improvement,
+            bestAo5, bestAo12, bestAo100,
+            avgAo5: currentAverages.ao5,
+            avgAo12: currentAverages.ao12,
+            avgAo100: currentAverages.ao100
+        }
     }, [filteredSolves])
 
     const currentTheme = useStore(state => state.currentTheme)
@@ -257,14 +274,21 @@ export default function Analytics() {
                 </div>
             )}
 
-            <div className="stats-grid">
+            <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(6, 1fr)' }}>
                 {[
+                    { label: 'best single', value: stats ? formatTime(stats.best) : '-', highlight: true },
+                    { label: 'best ao5', value: stats && stats.bestAo5 ? formatTime(stats.bestAo5) : '-', highlight: true },
+                    { label: 'best ao12', value: stats && stats.bestAo12 ? formatTime(stats.bestAo12) : '-', highlight: true },
+                    { label: 'best ao100', value: stats && stats.bestAo100 ? formatTime(stats.bestAo100) : '-', highlight: true },
+                    { label: 'median', value: stats ? formatTime(stats.median) : '-' },
+                    { label: 'std dev', value: stats ? formatTime(stats.stdDev) : '-' },
+
+                    { label: 'avg single', value: stats ? formatTime(stats.mean) : '-' },
+                    { label: 'avg ao5', value: stats && stats.avgAo5 ? formatTime(stats.avgAo5) : '-' },
+                    { label: 'avg ao12', value: stats && stats.avgAo12 ? formatTime(stats.avgAo12) : '-' },
+                    { label: 'avg ao100', value: stats && stats.avgAo100 ? formatTime(stats.avgAo100) : '-' },
                     { label: 'total solves', value: stats ? stats.count : 0 },
-                    { label: 'best time', value: stats ? formatTime(stats.best) : '-', highlight: true },
-                    { label: 'worst time', value: stats ? formatTime(stats.worst) : '-' },
-                    { label: 'average mean', value: stats ? formatTime(stats.mean) : '-' },
-                    { label: 'standard dev', value: stats ? formatTime(stats.stdDev) : '-' },
-                    { label: 'total time', value: stats ? (stats.totalTime / 1000 / 60).toFixed(1) + 'm' : '0.0m' }
+                    { label: 'total time', value: stats ? (stats.totalTime / 1000 / 60).toFixed(1) + 'm' : '0.0m' },
                 ].map((stat, i) => (
                     <div key={i} className="stat-card" style={{ position: 'relative' }}>
                         <label>{stat.label}</label>
