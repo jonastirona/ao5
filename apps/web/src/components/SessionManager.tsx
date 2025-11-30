@@ -34,13 +34,19 @@ export default function SessionManager() {
         }
     }, [isDropdownOpen])
 
+    const [error, setError] = useState<string | null>(null)
+
     const handleCreate = (e: React.FormEvent) => {
         e.preventDefault()
-        if (!newName.trim()) return
+        if (!newName.trim()) {
+            setError('please enter a session name')
+            return
+        }
         createSession(newName, newType)
         setIsCreating(false)
         setNewName('')
         setNewType('3x3')
+        setError(null)
     }
 
     const handleRename = (e: React.FormEvent) => {
@@ -150,9 +156,13 @@ export default function SessionManager() {
                                     type="text"
                                     placeholder="e.g. 3x3 main"
                                     value={newName}
-                                    onChange={e => setNewName(e.target.value)}
-                                    className="input"
+                                    onChange={e => {
+                                        setNewName(e.target.value)
+                                        if (error) setError(null)
+                                    }}
+                                    className={`input ${error ? 'error' : ''}`}
                                 />
+                                {error && <span className="error-text" style={{ color: 'var(--error)', fontSize: '12px', marginTop: '4px', display: 'block' }}>{error}</span>}
                             </div>
                             <div className="form-group">
                                 <label>puzzle</label>
@@ -173,40 +183,43 @@ export default function SessionManager() {
                                 <button type="button" className="btn text" onClick={() => setIsCreating(false)}>cancel</button>
                                 <button type="submit" className="btn primary">create</button>
                             </div>
-                        </form>
-                    </div>
-                </div>,
+                        </form >
+                    </div >
+                </div >,
                 document.body
-            )}
+            )
+            }
 
             {/* Rename Modal */}
-            {isRenaming && createPortal(
-                <div className="modal-overlay" onClick={() => setIsRenaming(null)}>
-                    <div className="modal" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h3>rename session</h3>
-                            <button className="close-btn" onClick={() => setIsRenaming(null)}>×</button>
+            {
+                isRenaming && createPortal(
+                    <div className="modal-overlay" onClick={() => setIsRenaming(null)}>
+                        <div className="modal" onClick={e => e.stopPropagation()}>
+                            <div className="modal-header">
+                                <h3>rename session</h3>
+                                <button className="close-btn" onClick={() => setIsRenaming(null)}>×</button>
+                            </div>
+                            <form onSubmit={handleRename}>
+                                <div className="form-group">
+                                    <label>name</label>
+                                    <input
+                                        autoFocus
+                                        type="text"
+                                        value={renameValue}
+                                        onChange={e => setRenameValue(e.target.value)}
+                                        className="input"
+                                    />
+                                </div>
+                                <div className="modal-actions">
+                                    <button type="button" className="btn text" onClick={() => setIsRenaming(null)}>cancel</button>
+                                    <button type="submit" className="btn primary">save</button>
+                                </div>
+                            </form>
                         </div>
-                        <form onSubmit={handleRename}>
-                            <div className="form-group">
-                                <label>name</label>
-                                <input
-                                    autoFocus
-                                    type="text"
-                                    value={renameValue}
-                                    onChange={e => setRenameValue(e.target.value)}
-                                    className="input"
-                                />
-                            </div>
-                            <div className="modal-actions">
-                                <button type="button" className="btn text" onClick={() => setIsRenaming(null)}>cancel</button>
-                                <button type="submit" className="btn primary">save</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>,
-                document.body
-            )}
-        </div>
+                    </div>,
+                    document.body
+                )
+            }
+        </div >
     )
 }

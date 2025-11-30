@@ -233,12 +233,13 @@ export default function Account() {
                         await useAuth.getState().updateUsername(username)
                         addToast('username updated!', 'success')
                         setUsername('')
-                      } catch (err: any) {
+                      } catch (err: unknown) {
                         console.error(err)
-                        if (err.message?.includes('duplicate key') || err.message?.includes('unique constraint')) {
+                        const message = (err as Error).message || 'failed to update username'
+                        if (message.includes('duplicate key') || message.includes('unique constraint')) {
                           addToast('username already taken', 'error')
                         } else {
-                          addToast(err.message || 'failed to update username', 'error')
+                          addToast(message, 'error')
                         }
                       } finally {
                         setBusy(false)
@@ -272,9 +273,10 @@ export default function Account() {
                           await useAuth.getState().updateEmail(email)
                           addToast('confirmation email sent!', 'success')
                           setEmail('')
-                        } catch (err: any) {
+                        } catch (err: unknown) {
                           console.error(err)
-                          if (err?.message?.includes('already been registered') || err?.message?.includes('already registered')) {
+                          const message = (err as Error).message || 'failed to update email'
+                          if (message.includes('already been registered') || message.includes('already registered')) {
                             addToast('email already in use', 'error')
                           } else {
                             addToast('failed to update email', 'error')

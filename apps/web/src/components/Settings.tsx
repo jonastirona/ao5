@@ -2,49 +2,24 @@ import { Link } from 'react-router-dom'
 import ThemeSelector from './ThemeSelector'
 import { useStore } from '../store'
 import { useState } from 'react'
-import { exportSessionToJSON, exportSessionToCSV, exportSessionToText, parseImport } from '../lib/importExport'
+import { exportAllSessionsToJSON, parseImport } from '../lib/importExport'
 
 export default function Settings() {
     const settings = useStore(s => s.settings)
     const updateSettings = useStore(s => s.updateSettings)
     const sessions = useStore(s => s.sessions)
-    const currentSessionId = useStore(s => s.currentSessionId)
     const addSession = useStore(s => s.addSession)
 
     const [importError, setImportError] = useState<string | null>(null)
     const [importSuccess, setImportSuccess] = useState<string | null>(null)
 
-    const handleExport = (format: 'json' | 'csv' | 'txt') => {
-        const currentSession = sessions.find(s => s.id === currentSessionId)
-        if (!currentSession) return
-
-        let content = ''
-        let mimeType = ''
-        let extension = ''
-
-        switch (format) {
-            case 'json':
-                content = exportSessionToJSON(currentSession)
-                mimeType = 'application/json'
-                extension = 'json'
-                break
-            case 'csv':
-                content = exportSessionToCSV(currentSession)
-                mimeType = 'text/csv'
-                extension = 'csv'
-                break
-            case 'txt':
-                content = exportSessionToText(currentSession)
-                mimeType = 'text/plain'
-                extension = 'txt'
-                break
-        }
-
-        const blob = new Blob([content], { type: mimeType })
+    const handleExport = () => {
+        const content = exportAllSessionsToJSON(sessions)
+        const blob = new Blob([content], { type: 'application/json' })
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = `ao5-session-${currentSession.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}-${new Date().toISOString().split('T')[0]}.${extension}`
+        a.download = `ao5-backup-${new Date().toISOString().split('T')[0]}.json`
         a.click()
         URL.revokeObjectURL(url)
     }
@@ -172,7 +147,7 @@ export default function Settings() {
                         <div className="setting-item">
                             <div className="setting-info">
                                 <label>scramble image</label>
-                                <p>show 3d visualization of the scramble</p>
+                                <p>show 2d or 3d visualization of the scramble</p>
                             </div>
                             <label className="toggle-switch">
                                 <input
@@ -185,23 +160,45 @@ export default function Settings() {
                         </div>
 
                         {settings.showScrambleImage && (
-                            <div className="setting-item">
-                                <div className="setting-info">
-                                    <label>image size</label>
-                                    <p>scale: {settings.scrambleImageScale || 1}x</p>
+                            <>
+                                <div className="setting-item">
+                                    <div className="setting-info">
+                                        <label>visualization type</label>
+                                        <p>choose between 2d or interactive 3d model</p>
+                                    </div>
+                                    <div className="segmented-control">
+                                        <button
+                                            className={`segment ${!settings.scrambleVisualization3D ? 'active' : ''}`}
+                                            onClick={() => updateSettings({ scrambleVisualization3D: false })}
+                                        >
+                                            2d
+                                        </button>
+                                        <button
+                                            className={`segment ${settings.scrambleVisualization3D ? 'active' : ''}`}
+                                            onClick={() => updateSettings({ scrambleVisualization3D: true })}
+                                        >
+                                            3d
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="setting-control">
-                                    <input
-                                        type="range"
-                                        min="0.5"
-                                        max="2.0"
-                                        step="0.1"
-                                        value={settings.scrambleImageScale || 1}
-                                        onChange={(e) => updateSettings({ scrambleImageScale: parseFloat(e.target.value) })}
-                                        className="range-input"
-                                    />
+                                <div className="setting-item">
+                                    <div className="setting-info">
+                                        <label>image size</label>
+                                        <p>scale: {settings.scrambleImageScale || 1}x</p>
+                                    </div>
+                                    <div className="setting-control">
+                                        <input
+                                            type="range"
+                                            min="0.5"
+                                            max="2.0"
+                                            step="0.1"
+                                            value={settings.scrambleImageScale || 1}
+                                            onChange={(e) => updateSettings({ scrambleImageScale: parseFloat(e.target.value) })}
+                                            className="range-input"
+                                        />
+                                    </div>
                                 </div>
-                            </div>
+                            </>
                         )}
 
                         <div className="setting-item">
@@ -224,11 +221,9 @@ export default function Settings() {
                         <h3>data</h3>
                         <div className="data-actions-col">
                             <div className="data-group">
-                                <h4>export current session</h4>
+                                <h4>export data</h4>
                                 <div className="button-group">
-                                    <button className="btn" onClick={() => handleExport('json')}>json</button>
-                                    <button className="btn" onClick={() => handleExport('csv')}>csv</button>
-                                    <button className="btn" onClick={() => handleExport('txt')}>text</button>
+                                    <button className="btn full-width" onClick={handleExport}>export all sessions (cstimer format)</button>
                                 </div>
                             </div>
 
@@ -247,7 +242,7 @@ export default function Settings() {
                                         <input type="file" accept=".json,.csv,.txt" onChange={handleImport} multiple />
                                     </div>
                                 </div>
-                                <p className="hint">supports ao5 json, cstimer, cubedesk, flowtimer csv, and plain text.</p>
+                                <p className="hint">supports cstimer backup files. for other formats, please submit a request via feedback.</p>
                             </div>
                         </div>
                         {importSuccess && <div className="toast success" style={{ position: 'static', marginTop: '1rem' }}>{importSuccess}</div>}

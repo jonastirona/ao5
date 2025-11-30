@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { exportSessionToJSON, exportSessionToCSV, exportSessionToText, parseImport } from './importExport'
+import { exportAllSessionsToJSON, exportSessionToCSV, exportSessionToText, parseImport } from './importExport'
 import type { Session } from '../store'
 
 describe('Import/Export', () => {
@@ -15,7 +15,7 @@ describe('Import/Export', () => {
     }
 
     it('should export and import JSON correctly', () => {
-        const json = exportSessionToJSON(mockSession)
+        const json = exportAllSessionsToJSON([mockSession])
         const imported = parseImport(json, 'test.json')
         
         expect(imported).toHaveLength(1)
@@ -25,14 +25,9 @@ describe('Import/Export', () => {
         
         // Check solve 1 (OK)
         expect(session.solves[0].timeMs).toBe(10000)
-        // Check solve 1 (OK)
-        // parseImport calls parseJSONImport -> convertExportSessionToInternal -> mapExportToInternalSolve
-        // mapExportToInternalSolve returns internal format (null/plus2/DNF)
         expect(session.solves[0].penalty).toBeNull()
 
         // Check solve 2 (+2)
-        // Export: timeMs=12000, rawTimeMs=10000, penalty=+2
-        // Import: timeMs=10000 (raw), penalty=plus2
         expect(session.solves[1].timeMs).toBe(10000)
         expect(session.solves[1].penalty).toBe('plus2')
 

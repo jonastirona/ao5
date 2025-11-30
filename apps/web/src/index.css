@@ -1,9 +1,81 @@
-:root { color-scheme: dark; }
-* { box-sizing: border-box; }
-html, body, #root { height: 100%; }
+:root {
+  color-scheme: dark;
+  --text-secondary: #a0a0a0;
+  --accent: #646cff;
+  --accent-hover: #535bf2;
+  --border: #333;
+  --error: #ff4d4d;
+  --success: #4caf50;
+  --warning: #ff9800;
+  --surface: #1a1a1a;
+  --surface-hover: #242424;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
 body {
   margin: 0;
   background: #011502;
   color: #9ec5ab;
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol;
+}
+
+/* Segmented Control */
+.segmented-control {
+  display: flex;
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 4px;
+  gap: 4px;
+  border: 1px solid var(--border);
+}
+
+.segment {
+  flex: 1;
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.segment:hover {
+  color: var(--text-primary);
+  background: var(--surface-hover);
+}
+
+.segment.active {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.error-text {
+  font-size: 12px;
+  color: var(--error);
+  margin-top: 4px;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

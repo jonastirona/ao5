@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 
 interface TourStep {
@@ -119,52 +119,7 @@ export default function TourOverlay({ isOpen, onClose }: TourOverlayProps) {
 
     const currentStep = TOUR_STEPS[currentStepIndex]
 
-    useEffect(() => {
-        if (isOpen) {
-            setCurrentStepIndex(0)
-            updateTargetRect(0)
-
-            // Prevent scrolling
-            document.body.style.overflow = 'hidden'
-        } else {
-            document.body.style.overflow = ''
-        }
-
-        return () => {
-            document.body.style.overflow = ''
-        }
-    }, [isOpen])
-
-    useEffect(() => {
-        let timeoutId: ReturnType<typeof setTimeout>
-        const handleResize = () => {
-            clearTimeout(timeoutId)
-            timeoutId = setTimeout(() => updateTargetRect(currentStepIndex), 100)
-        }
-
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (!isOpen) return
-
-            if (e.key === 'Escape') {
-                onClose()
-            } else if (e.key === 'ArrowRight') {
-                handleNext()
-            } else if (e.key === 'ArrowLeft') {
-                handleBack()
-            }
-        }
-
-        window.addEventListener('resize', handleResize)
-        window.addEventListener('keydown', handleKeyDown)
-
-        return () => {
-            window.removeEventListener('resize', handleResize)
-            window.removeEventListener('keydown', handleKeyDown)
-            clearTimeout(timeoutId)
-        }
-    }, [isOpen, currentStepIndex])
-
-    const getTargetRect = (step: TourStep) => {
+    const getTargetRect = useCallback((step: TourStep) => {
         if (step.target === 'welcome' || step.target === 'shortcuts-info') {
             // Virtual center target matching tooltip size exactly
             // Tooltip width is 320px + 1.5rem (24px) padding * 2 = 368px
@@ -204,14 +159,14 @@ export default function TourOverlay({ isOpen, onClose }: TourOverlayProps) {
             }
         }
         return null
-    }
+    }, [])
 
-    const updateTargetRect = (index: number) => {
+    const updateTargetRect = useCallback((index: number) => {
         const rect = getTargetRect(TOUR_STEPS[index])
         setTargetRect(rect)
-    }
+    }, [getTargetRect])
 
-    const handleNext = () => {
+    const handleNext = useCallback(() => {
         if (currentStepIndex < TOUR_STEPS.length - 1) {
             setIsTransitioning(true)
             // Wait for fade out
@@ -231,9 +186,9 @@ export default function TourOverlay({ isOpen, onClose }: TourOverlayProps) {
         } else {
             onClose()
         }
-    }
+    }, [currentStepIndex, getTargetRect, onClose])
 
-    const handleBack = () => {
+    const handleBack = useCallback(() => {
         if (currentStepIndex > 0) {
             setIsTransitioning(true)
             setTimeout(() => {
@@ -249,7 +204,52 @@ export default function TourOverlay({ isOpen, onClose }: TourOverlayProps) {
                 }, 150)
             }, 200)
         }
-    }
+    }, [currentStepIndex, getTargetRect])
+
+    useEffect(() => {
+        if (isOpen) {
+            setCurrentStepIndex(0)
+            updateTargetRect(0)
+
+            // Prevent scrolling
+            document.body.style.overflow = 'hidden'
+        } else {
+            document.body.style.overflow = ''
+        }
+
+        return () => {
+            document.body.style.overflow = ''
+        }
+    }, [isOpen, updateTargetRect])
+
+    useEffect(() => {
+        let timeoutId: ReturnType<typeof setTimeout>
+        const handleResize = () => {
+            clearTimeout(timeoutId)
+            timeoutId = setTimeout(() => updateTargetRect(currentStepIndex), 100)
+        }
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (!isOpen) return
+
+            if (e.key === 'Escape') {
+                onClose()
+            } else if (e.key === 'ArrowRight') {
+                handleNext()
+            } else if (e.key === 'ArrowLeft') {
+                handleBack()
+            }
+        }
+
+        window.addEventListener('resize', handleResize)
+        window.addEventListener('keydown', handleKeyDown)
+
+        return () => {
+            window.removeEventListener('resize', handleResize)
+            window.removeEventListener('keydown', handleKeyDown)
+            clearTimeout(timeoutId)
+        }
+    }, [isOpen, currentStepIndex, updateTargetRect, handleNext, handleBack, onClose])
 
     useLayoutEffect(() => {
         if (!targetRect || !tooltipRef.current) return

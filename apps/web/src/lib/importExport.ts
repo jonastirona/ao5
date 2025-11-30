@@ -73,14 +73,67 @@ const mapExportToInternalSolve = (solve: ExportSolve, puzzleType: string = '3x3'
 
 // --- Export Functions ---
 
-export function exportSessionToJSON(session: Session): string {
-  const exportSession: ExportSession = {
-    id: session.id,
-    name: session.name,
-    createdAt: session.solves[0]?.timestamp || Date.now(), // Approximate if not stored
-    solves: session.solves.map(mapInternalToExportSolve)
+export function exportAllSessionsToJSON(sessions: Session[]): string {
+  // csTimer format:
+  // {
+  //   "session1": [[penalty, time(ms), scramble, comment, timestamp], ...],
+  //   "session2": [...],
+  //   "properties": {
+  //     "session1": { "name": "Session Name", "opt": { "scrType": "333" } },
+  //     "session2": { ... },
+  //     "sessionData": "{\"1\":{\"name\":\"Session Name\",\"opt\":{\"scrType\":\"333\"}}, \"2\": ...}"
+  //   }
+  // }
+
+  const csTimerMap: Record<string, string> = {
+      '3x3': '333', '2x2': '222so', '4x4': '444wca', '5x5': '555wca',
+      '6x6': '666wca', '7x7': '777wca', '3x3_oh': '333oh', '3x3_bld': '333ni',
+      'clock': 'clkwca', 'megaminx': 'mgmp', 'pyraminx': 'pyrso', 'skewb': 'skbso', 'sq1': 'sq1',
+      '3x3_fm': '333fm', '4x4_bld': '444bld', '5x5_bld': '555bld', '3x3_mbld': '333mbld'
   }
-  return JSON.stringify(exportSession, null, 2)
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const exportData: any = {
+      properties: {}
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sessionDataMap: any = {}
+
+  sessions.forEach((session, index) => {
+      const sessionKey = `session${index + 1}`
+      const scrType = csTimerMap[session.puzzleType] || '333'
+
+      // Format solves
+      const solves = session.solves.map(s => {
+          let penalty = 0
+          if (s.penalty === 'plus2') penalty = 2000
+          if (s.penalty === 'DNF') penalty = -1
+          
+          return [
+              penalty,
+              s.timeMs, 
+              s.scramble,
+              '', // comment
+              Math.floor(s.timestamp / 1000)
+          ]
+      })
+
+      exportData[sessionKey] = solves
+      
+      // Add to sessionData map (used inside properties.sessionData string)
+      sessionDataMap[String(index + 1)] = {
+          name: session.name,
+          opt: {
+              scrType: scrType
+          }
+      }
+  })
+
+  // csTimer puts the session metadata in a JSON string under properties.sessionData
+  exportData.properties.sessionData = JSON.stringify(sessionDataMap)
+
+  return JSON.stringify(exportData, null, 2)
 }
 
 export function exportSessionToCSV(session: Session): string {

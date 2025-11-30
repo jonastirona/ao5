@@ -4,6 +4,7 @@ import { generateScramble, type PuzzleType, SUPPORTED_EVENTS } from 'core'
 import { calculateAverages, getBestAverage, type Solve } from 'core'
 import { supabase } from './lib/supabaseClient'
 import { syncSolveToCloud, deleteSolveFromCloud } from './cloudSync'
+import { themes } from './themes'
 
 export interface SolveEntry extends Solve {
   id: string
@@ -89,6 +90,7 @@ export interface Settings {
   inspectionDuration: number // ms
   showScrambleImage: boolean
   scrambleImageScale: number
+  scrambleVisualization3D: boolean
   pbEffectsEnabled: boolean
 }
 
@@ -135,7 +137,8 @@ export const useStore = create<StoreState>((set, get) => ({
         const parsed = JSON.parse(raw)
         if (Array.isArray(parsed.sessions)) {
             sessions = parsed.sessions
-            currentSessionId = parsed.currentSessionId || sessions[0]?.id || ''
+            // Prefer last used session ID if available, otherwise fallback to stored current or first
+            currentSessionId = parsed.lastSessionId || parsed.currentSessionId || sessions[0]?.id || ''
             if (typeof parsed.guestSolveCount === 'number') {
                 set({ guestSolveCount: parsed.guestSolveCount })
             }
@@ -209,6 +212,7 @@ export const useStore = create<StoreState>((set, get) => ({
         inspectionDuration: 15000, 
         showScrambleImage: true, 
         scrambleImageScale: 1,
+        scrambleVisualization3D: true,
         pbEffectsEnabled: true
     }
     try {
@@ -240,7 +244,18 @@ export const useStore = create<StoreState>((set, get) => ({
         console.error('[store] Failed to load settings from cloud:', e)
     }
 
-    set({ sessions, currentSessionId, settings })
+    // Load theme
+    let currentTheme = 'default'
+    try {
+        const storedTheme = localStorage.getItem('ao5.theme')
+        if (storedTheme && themes[storedTheme]) {
+            currentTheme = storedTheme
+        }
+    } catch {
+        // Ignore storage errors
+    }
+
+    set({ sessions, currentSessionId, settings, currentTheme })
     
     // Update stats for current session
     const currentSession = sessions.find(s => s.id === currentSessionId)
@@ -345,7 +360,12 @@ export const useStore = create<StoreState>((set, get) => ({
         set(updates)
         
         try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify({ sessions: updatedSessions, currentSessionId: state.currentSessionId, guestSolveCount: state.guestSolveCount }))
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({ 
+              sessions: updatedSessions, 
+              currentSessionId: state.currentSessionId, 
+              lastSessionId: state.currentSessionId,
+              guestSolveCount: state.guestSolveCount 
+          }))
         } catch {
           // Ignore storage errors
         }
@@ -577,7 +597,11 @@ export const useStore = create<StoreState>((set, get) => ({
       })()
 
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ sessions, currentSessionId: newSession.id }))
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ 
+            sessions, 
+            currentSessionId: newSession.id,
+            lastSessionId: newSession.id 
+        }))
       } catch {
         // Ignore storage errors
       }
@@ -679,7 +703,11 @@ export const useStore = create<StoreState>((set, get) => ({
       })()
       
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ sessions: state.sessions, currentSessionId: id }))
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ 
+            sessions: state.sessions, 
+            currentSessionId: id,
+            lastSessionId: id // Persist last used session
+        }))
       } catch {
         // Ignore storage errors
       }
@@ -952,6 +980,7 @@ export const useStore = create<StoreState>((set, get) => ({
       inspectionDuration: 15000,
       showScrambleImage: true,
       scrambleImageScale: 1,
+      scrambleVisualization3D: false,
       pbEffectsEnabled: true
   },
   
@@ -985,5 +1014,14 @@ export const useStore = create<StoreState>((set, get) => ({
               console.error('[store] Failed to sync settings:', e)
           }
       })()
+  },
+
+  setTheme: (theme: string) => {
+      set({ currentTheme: theme })
+      try {
+          localStorage.setItem('ao5.theme', theme)
+      } catch {
+          // Ignore storage errors
+      }
   }
 }))

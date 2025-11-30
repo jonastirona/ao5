@@ -43,7 +43,7 @@ export default function ScrambleDisplay() {
       playerRef.current = new TwistyPlayer({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         puzzle: (PUZZLE_MAPPING[puzzleType] || '3x3x3') as any,
-        visualization: '2D',
+        visualization: settings.scrambleVisualization3D ? '3D' : '2D',
         alg: scramble,
         background: 'none',
         controlPanel: 'none',
@@ -58,8 +58,9 @@ export default function ScrambleDisplay() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       playerRef.current.puzzle = (PUZZLE_MAPPING[puzzleType] || '3x3x3') as any
       playerRef.current.alg = scramble
+      playerRef.current.visualization = settings.scrambleVisualization3D ? '3D' : '2D'
     }
-  }, [scramble, puzzleType, settings.showScrambleImage])
+  }, [scramble, puzzleType, settings.showScrambleImage, settings.scrambleVisualization3D])
 
   return (
     <div className="scramble-wrapper" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
