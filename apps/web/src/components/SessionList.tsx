@@ -47,6 +47,14 @@ function SolveRow({ solve, index, onDelete, onPenalty, ao5, ao12, ao100, isPbSin
     onToggleScramble()
   }
 
+  const handleEnter = (callback: () => void) => (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.code === 'Enter') {
+      e.preventDefault()
+      e.stopPropagation()
+      callback()
+    }
+  }
+
   const cyclePenalty = (e: React.MouseEvent) => {
     e.stopPropagation()
     if (solve.penalty === null) onPenalty('plus2')
@@ -54,13 +62,27 @@ function SolveRow({ solve, index, onDelete, onPenalty, ao5, ao12, ao100, isPbSin
     else onPenalty(null)
   }
 
+  const handlePenaltyKeyDown = handleEnter(() => {
+    if (solve.penalty === null) onPenalty('plus2')
+    else if (solve.penalty === 'plus2') onPenalty('DNF')
+    else onPenalty(null)
+  })
+
   return (
     <div className="solve-item-wrapper" ref={rowRef}>
       <div className="solve-item">
         <div className="solve-left">
           <span className="solve-index">#{index}</span>
           <div className="solve-inline">
-            <span className={`solve-time ${solve.penalty === 'DNF' ? 'dnf' : ''} ${isPbSingle ? 'pb-value' : ''}`} onClick={cyclePenalty} title="Click to cycle penalty">
+            <span
+              className={`solve-time ${solve.penalty === 'DNF' ? 'dnf' : ''} ${isPbSingle ? 'pb-value' : ''}`}
+              onClick={cyclePenalty}
+              title="Click to cycle penalty"
+              role="button"
+              tabIndex={0}
+              onKeyDown={handlePenaltyKeyDown}
+              aria-label={`Time: ${formatSolve(solve)}. Click to cycle penalty.`}
+            >
               {formatSolve(solve)}
             </span>
             <span className={`solve-avg ${isPbAo5 ? 'pb-value' : ''}`}>ao5: {formatAverage(ao5)}</span>
@@ -152,7 +174,9 @@ export default function SessionList() {
     if (!isExpanded) return
     const listElement = listRef.current
     if (listElement) {
-      listElement.scrollTop = listElement.scrollHeight
+      // If we reverse the list, we might want to scroll to top instead of bottom?
+      // Or if we reverse it, the "latest" is at the top.
+      listElement.scrollTop = 0
     }
   }, [solves, isExpanded])
 
@@ -188,17 +212,36 @@ export default function SessionList() {
     return time === bestSingle
   }
 
+  const handleExpand = () => {
+    if (!hasSolves) return
+    setOpenScrambleId(null)
+    setIsExpanded(true)
+  }
+
+  const handleCollapse = () => {
+    if (!isExpanded) return
+    setOpenScrambleId(null)
+    setIsExpanded(false)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      if (isExpanded) handleCollapse()
+      else handleExpand()
+    }
+  }
+
   return (
     <div className="session-container" ref={containerRef}>
       <div
         className={`session-collapsed ${isExpanded ? 'hidden' : ''}`}
-        onClick={() => {
-          if (!hasSolves) return
-          setOpenScrambleId(null)
-          setIsExpanded(true)
-        }}
+        onClick={handleExpand}
         role={hasSolves ? 'button' : 'region'}
         tabIndex={hasSolves ? 0 : -1}
+        onKeyDown={handleKeyDown}
+        aria-label="Expand session list"
+        aria-expanded={isExpanded}
       >
         {latest ? (
           <SolveRow
@@ -224,20 +267,19 @@ export default function SessionList() {
       <div
         ref={listRef}
         className={`solves-list-container ${isExpanded ? 'expanded' : 'is-collapsed'}`}
-        onClick={() => {
-          if (!isExpanded) return
-          setOpenScrambleId(null)
-          setIsExpanded(false)
-        }}
+        onClick={handleCollapse}
         role={'button'}
         tabIndex={0}
+        onKeyDown={handleKeyDown}
+        aria-label="Collapse session list"
+        aria-expanded={isExpanded}
       >
         {hasSolves ? (
-          solvesWithAverages.map((s, idx) => (
+          [...solvesWithAverages].reverse().map((s, idx) => (
             <SolveRow
               key={s.id}
               solve={s}
-              index={idx + 1}
+              index={solvesWithAverages.length - idx}
               onDelete={() => deleteSolve(s.id)}
               onPenalty={(p) => updateSolvePenalty(s.id, p)}
               ao5={s.ao5}
@@ -247,7 +289,7 @@ export default function SessionList() {
               isPbAo5={!!bestAo5 && s.ao5 === bestAo5}
               isPbAo12={!!bestAo12 && s.ao12 === bestAo12}
               isPbAo100={!!bestAo100 && s.ao100 === bestAo100}
-              rowRef={idx === solvesWithAverages.length - 1 ? lastItemRef : undefined}
+              rowRef={idx === 0 ? lastItemRef : undefined}
               isOpen={openScrambleId === s.id}
               onToggleScramble={() => setOpenScrambleId(prev => prev === s.id ? null : s.id)}
             />

@@ -94,6 +94,22 @@ export default function About() {
                             <span>delete last solve</span>
                         </li>
                     </ul>
+
+                    <h3>accessibility</h3>
+                    <div className="credits-list">
+                        <div className="credit-item">
+                            <strong>keyboard navigation</strong>
+                            <p>full keyboard support for menus, settings, and session management. use <kbd>tab</kbd> to navigate and <kbd>enter</kbd> to interact.</p>
+                        </div>
+                        <div className="credit-item">
+                            <strong>focus management</strong>
+                            <p>modals trap focus to prevent background interaction. focus is automatically restored when closing menus.</p>
+                        </div>
+                        <div className="credit-item">
+                            <strong>screen readers</strong>
+                            <p>semantic html and aria labels are used throughout the app for better screen reader compatibility.</p>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="settings-section">

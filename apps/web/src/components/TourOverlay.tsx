@@ -1,3 +1,4 @@
+import { useFocusTrap } from '../hooks/useFocusTrap'
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 
@@ -114,6 +115,7 @@ export default function TourOverlay({ isOpen, onClose }: TourOverlayProps) {
     const [isTransitioning, setIsTransitioning] = useState(false)
     const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({})
     const tooltipRef = useRef<HTMLDivElement>(null)
+    useFocusTrap(isOpen, onClose, tooltipRef)
 
     const [positionedStep, setPositionedStep] = useState(-1)
 

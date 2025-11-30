@@ -1,17 +1,21 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import ThemeSelector from './ThemeSelector'
 import { useStore } from '../store'
 import { useState } from 'react'
 import { exportAllSessionsToJSON, parseImport } from '../lib/importExport'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 
 export default function Settings() {
     const settings = useStore(s => s.settings)
     const updateSettings = useStore(s => s.updateSettings)
     const sessions = useStore(s => s.sessions)
     const addSession = useStore(s => s.addSession)
+    const navigate = useNavigate()
 
     const [importError, setImportError] = useState<string | null>(null)
     const [importSuccess, setImportSuccess] = useState<string | null>(null)
+
+    const containerRef = useFocusTrap(true, () => navigate('/'))
 
     const handleExport = () => {
         const content = exportAllSessionsToJSON(sessions)
@@ -100,7 +104,7 @@ export default function Settings() {
     }
 
     return (
-        <div className="settings-container">
+        <div className="settings-container" ref={containerRef}>
             <div className="settings-header">
                 <h2>settings</h2>
                 <Link to="/" className="close-btn">×</Link>
@@ -120,6 +124,7 @@ export default function Settings() {
                                     type="checkbox"
                                     checked={settings.inspectionEnabled}
                                     onChange={(e) => updateSettings({ inspectionEnabled: e.target.checked })}
+                                    aria-label="Enable inspection"
                                 />
                                 <span className="slider"></span>
                             </label>
@@ -139,6 +144,7 @@ export default function Settings() {
                                         className="input small"
                                         min="0"
                                         max="60"
+                                        aria-label="Inspection duration in seconds"
                                     />
                                 </div>
                             </div>
@@ -154,6 +160,7 @@ export default function Settings() {
                                     type="checkbox"
                                     checked={settings.showScrambleImage}
                                     onChange={(e) => updateSettings({ showScrambleImage: e.target.checked })}
+                                    aria-label="Show scramble image"
                                 />
                                 <span className="slider"></span>
                             </label>
@@ -170,12 +177,14 @@ export default function Settings() {
                                         <button
                                             className={`segment ${!settings.scrambleVisualization3D ? 'active' : ''}`}
                                             onClick={() => updateSettings({ scrambleVisualization3D: false })}
+                                            aria-pressed={!settings.scrambleVisualization3D}
                                         >
                                             2d
                                         </button>
                                         <button
                                             className={`segment ${settings.scrambleVisualization3D ? 'active' : ''}`}
                                             onClick={() => updateSettings({ scrambleVisualization3D: true })}
+                                            aria-pressed={settings.scrambleVisualization3D}
                                         >
                                             3d
                                         </button>
@@ -195,6 +204,7 @@ export default function Settings() {
                                             value={settings.scrambleImageScale || 1}
                                             onChange={(e) => updateSettings({ scrambleImageScale: parseFloat(e.target.value) })}
                                             className="range-input"
+                                            aria-label="Scramble image scale"
                                         />
                                     </div>
                                 </div>
@@ -211,6 +221,7 @@ export default function Settings() {
                                     type="checkbox"
                                     checked={settings.pbEffectsEnabled ?? true}
                                     onChange={(e) => updateSettings({ pbEffectsEnabled: e.target.checked })}
+                                    aria-label="Enable PB effects"
                                 />
                                 <span className="slider"></span>
                             </label>

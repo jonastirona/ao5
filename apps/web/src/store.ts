@@ -431,12 +431,34 @@ export const useStore = create<StoreState>((set, get) => ({
     
     const activeKeys = new Set<string>()
     
+    const shouldIgnore = (e: KeyboardEvent) => {
+        const target = e.target as HTMLElement
+        // If target is body, we're definitely not in an input
+        if (target === document.body) return false
+        
+        return target.tagName === 'INPUT' || 
+               target.tagName === 'TEXTAREA' || 
+               target.tagName === 'SELECT' || 
+               target.tagName === 'BUTTON' ||
+               target.isContentEditable ||
+               target.closest('[role="dialog"]') !== null // Also ignore if inside a modal? Maybe too aggressive if we want to allow timer in some modals? 
+               // Actually, if we are in a modal, we probably DON'T want to start the timer.
+               // But let's stick to interactive elements first.
+               // If a user is in a modal, they might press Space to close it (if focused on close button) or toggle something.
+               // We should definitely ignore inputs/buttons.
+    }
+
     const onKeyDown = (e: KeyboardEvent) => {
+      if (shouldIgnore(e)) return
+
       if (e.code === 'Space') {
           // Prevent scrolling
           e.preventDefault()
       }
       
+      // Ignore Tab and Enter for global "key held" state (which hides UI)
+      if (e.code === 'Tab' || e.code === 'Enter') return
+
       if (!e.repeat) {
         if (e.code === 'Escape') {
             e.preventDefault()
@@ -508,6 +530,8 @@ export const useStore = create<StoreState>((set, get) => ({
     }
     
     const onKeyUp = (e: KeyboardEvent) => {
+      if (shouldIgnore(e)) return
+
       if (e.code === 'Space') {
           timer.handleKeyUp(e.code)
       }

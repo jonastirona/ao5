@@ -1,5 +1,7 @@
 
 
+import { useFocusTrap } from '../hooks/useFocusTrap'
+
 interface ConfirmationModalProps {
     isOpen: boolean
     title: string
@@ -19,6 +21,8 @@ export default function ConfirmationModal({
     onCancel,
     isDangerous = false,
 }: ConfirmationModalProps) {
+    const modalRef = useFocusTrap(isOpen, onCancel)
+
     if (!isOpen) return null
 
     return (
@@ -35,7 +39,7 @@ export default function ConfirmationModal({
             zIndex: 1000,
             backdropFilter: 'blur(4px)'
         }}>
-            <div className="modal-content" style={{
+            <div ref={modalRef} className="modal-content" style={{
                 backgroundColor: 'var(--bg)',
                 border: '1px solid var(--border)',
                 borderRadius: '12px',

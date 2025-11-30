@@ -10,8 +10,11 @@ interface ShareModalProps {
     value?: string
 }
 
+import { useFocusTrap } from '../hooks/useFocusTrap'
+
 export default function ShareModal({ isOpen, onClose, solveId, title, value }: ShareModalProps) {
     const [isCopied, setIsCopied] = useState(false)
+    const modalRef = useFocusTrap(isOpen, onClose)
 
     // Find the solve to share
     const solve = useStore(s => {
@@ -88,7 +91,7 @@ export default function ShareModal({ isOpen, onClose, solveId, title, value }: S
 
     return createPortal(
         <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-content share-modal" onClick={e => e.stopPropagation()}>
+            <div ref={modalRef} className="modal-content share-modal" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
                     <h2>share result</h2>
                     <button className="close-btn" onClick={onClose}>×</button>

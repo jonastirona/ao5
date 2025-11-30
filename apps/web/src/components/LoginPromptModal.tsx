@@ -1,14 +1,17 @@
 import { useAuth } from '../authStore'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 
 export default function LoginPromptModal() {
     const showLoginPrompt = useAuth(s => s.showLoginPrompt)
     const setShowLoginPrompt = useAuth(s => s.setShowLoginPrompt)
 
+    const modalRef = useFocusTrap(showLoginPrompt, () => setShowLoginPrompt(false))
+
     if (!showLoginPrompt) return null
 
     return (
         <div className="modal-overlay" onClick={() => setShowLoginPrompt(false)}>
-            <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div ref={modalRef} className="modal-content" onClick={e => e.stopPropagation()}>
                 <h2>save your progress</h2>
                 <p>
                     you've done 5 solves! log in / sign up to save your progress and access your stats from any device. it's free.
