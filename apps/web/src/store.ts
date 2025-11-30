@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { TimerStateMachine, type TimerState } from 'core'
 import { generateScramble, type PuzzleType, SUPPORTED_EVENTS } from 'core'
-import { calculateAverages, type Solve } from 'core'
+import { calculateAverages, getBestAverage, type Solve } from 'core'
 import { supabase } from './lib/supabaseClient'
 import { syncSolveToCloud, deleteSolveFromCloud } from './cloudSync'
 
@@ -292,28 +292,38 @@ export const useStore = create<StoreState>((set, get) => ({
         
         const pbTypes: ('single' | 'ao5' | 'ao12' | 'ao100')[] = []
 
+            // Check for PBs
         // Check for PBs
         if (state.settings.pbEffectsEnabled) {
-            const oldBest = state.best
-            const oldAo5 = state.ao5
-            const oldAo12 = state.ao12
-            const oldAo100 = state.ao100
+            // Calculate previous bests (excluding the new solve)
+            const previousSolves = session.solves
+            
+            const bestAo5 = getBestAverage(previousSolves, 5)
+            const bestAo12 = getBestAverage(previousSolves, 12)
+            const bestAo100 = getBestAverage(previousSolves, 100)
+            const oldBest = state.best // Single PB is tracked in state correctly usually, but let's be safe
             
             // Check single PB (lower is better, ignore nulls)
-            if (stats.best !== null && (oldBest === null || stats.best < oldBest)) {
+            if (typeof stats.best === 'number' && stats.best > 0 && (oldBest === null || stats.best < oldBest)) {
                 pbTypes.push('single')
             }
             // Check averages
-            if (stats.ao5 !== null && (oldAo5 === null || stats.ao5 < oldAo5)) {
-                pbTypes.push('ao5')
+            if (typeof stats.ao5 === 'number' && stats.ao5 > 0 && stats.ao5 !== -1) {
+                 if (bestAo5 === null || stats.ao5 < bestAo5) {
+                     pbTypes.push('ao5')
+                 }
             }
             
-            if (stats.ao12 !== null && (oldAo12 === null || stats.ao12 < oldAo12)) {
-                pbTypes.push('ao12')
+            if (typeof stats.ao12 === 'number' && stats.ao12 > 0 && stats.ao12 !== -1) {
+                if (bestAo12 === null || stats.ao12 < bestAo12) {
+                    pbTypes.push('ao12')
+                }
             }
             
-            if (stats.ao100 !== null && (oldAo100 === null || stats.ao100 < oldAo100)) {
-                pbTypes.push('ao100')
+            if (typeof stats.ao100 === 'number' && stats.ao100 > 0 && stats.ao100 !== -1) {
+                if (bestAo100 === null || stats.ao100 < bestAo100) {
+                    pbTypes.push('ao100')
+                }
             }
         }
 

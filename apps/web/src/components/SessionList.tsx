@@ -27,12 +27,16 @@ type SolveRowProps = {
   ao5: number | null
   ao12: number | null
   ao100: number | null
+  isPbSingle?: boolean
+  isPbAo5?: boolean
+  isPbAo12?: boolean
+  isPbAo100?: boolean
   isOpen: boolean
   onToggleScramble: () => void
   rowRef?: React.Ref<HTMLDivElement>
 }
 
-function SolveRow({ solve, index, onDelete, onPenalty, ao5, ao12, ao100, isOpen, onToggleScramble, rowRef }: SolveRowProps) {
+function SolveRow({ solve, index, onDelete, onPenalty, ao5, ao12, ao100, isPbSingle, isPbAo5, isPbAo12, isPbAo100, isOpen, onToggleScramble, rowRef }: SolveRowProps) {
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation()
     onDelete()
@@ -56,12 +60,12 @@ function SolveRow({ solve, index, onDelete, onPenalty, ao5, ao12, ao100, isOpen,
         <div className="solve-left">
           <span className="solve-index">#{index}</span>
           <div className="solve-inline">
-            <span className={`solve-time ${solve.penalty === 'DNF' ? 'dnf' : ''}`} onClick={cyclePenalty} title="Click to cycle penalty">
+            <span className={`solve-time ${solve.penalty === 'DNF' ? 'dnf' : ''} ${isPbSingle ? 'pb-value' : ''}`} onClick={cyclePenalty} title="Click to cycle penalty">
               {formatSolve(solve)}
             </span>
-            <span className="solve-avg">ao5: {formatAverage(ao5)}</span>
-            <span className="solve-avg">ao12: {formatAverage(ao12)}</span>
-            <span className="solve-avg">ao100: {formatAverage(ao100)}</span>
+            <span className={`solve-avg ${isPbAo5 ? 'pb-value' : ''}`}>ao5: {formatAverage(ao5)}</span>
+            <span className={`solve-avg ${isPbAo12 ? 'pb-value' : ''}`}>ao12: {formatAverage(ao12)}</span>
+            <span className={`solve-avg ${isPbAo100 ? 'pb-value' : ''}`}>ao100: {formatAverage(ao100)}</span>
           </div>
         </div>
         <div className="solve-actions">
@@ -118,6 +122,32 @@ export default function SessionList() {
     })
   }, [solves])
 
+  const { bestSingle, bestAo5, bestAo12, bestAo100 } = useMemo(() => {
+    let bSingle: number | null = null
+    let b5: number | null = null
+    let b12: number | null = null
+    let b100: number | null = null
+
+    solvesWithAverages.forEach(s => {
+      // Calculate effective time for single
+      if (s.penalty !== 'DNF') {
+        const time = s.timeMs + (s.penalty === 'plus2' ? 2000 : 0)
+        if (bSingle === null || time < bSingle) bSingle = time
+      }
+
+      if (typeof s.ao5 === 'number' && s.ao5 > 0) {
+        if (b5 === null || s.ao5 < b5) b5 = s.ao5
+      }
+      if (typeof s.ao12 === 'number' && s.ao12 > 0) {
+        if (b12 === null || s.ao12 < b12) b12 = s.ao12
+      }
+      if (typeof s.ao100 === 'number' && s.ao100 > 0) {
+        if (b100 === null || s.ao100 < b100) b100 = s.ao100
+      }
+    })
+    return { bestSingle: bSingle, bestAo5: b5, bestAo12: b12, bestAo100: b100 }
+  }, [solvesWithAverages])
+
   useLayoutEffect(() => {
     if (!isExpanded) return
     const listElement = listRef.current
@@ -151,6 +181,13 @@ export default function SessionList() {
   const hasSolves = solvesWithAverages.length > 0
   const latest = hasSolves ? solvesWithAverages[solvesWithAverages.length - 1] : null
 
+  // Helper to check if a solve is the best single
+  const isBestSingle = (s: SolveEntry) => {
+    if (!bestSingle || s.penalty === 'DNF') return false
+    const time = s.timeMs + (s.penalty === 'plus2' ? 2000 : 0)
+    return time === bestSingle
+  }
+
   return (
     <div className="session-container" ref={containerRef}>
       <div
@@ -172,6 +209,10 @@ export default function SessionList() {
             ao5={latest.ao5}
             ao12={latest.ao12}
             ao100={latest.ao100}
+            isPbSingle={isBestSingle(latest)}
+            isPbAo5={!!bestAo5 && latest.ao5 === bestAo5}
+            isPbAo12={!!bestAo12 && latest.ao12 === bestAo12}
+            isPbAo100={!!bestAo100 && latest.ao100 === bestAo100}
             isOpen={openScrambleId === latest.id}
             onToggleScramble={() => setOpenScrambleId(prev => prev === latest.id ? null : latest.id)}
           />
@@ -202,6 +243,10 @@ export default function SessionList() {
               ao5={s.ao5}
               ao12={s.ao12}
               ao100={s.ao100}
+              isPbSingle={isBestSingle(s)}
+              isPbAo5={!!bestAo5 && s.ao5 === bestAo5}
+              isPbAo12={!!bestAo12 && s.ao12 === bestAo12}
+              isPbAo100={!!bestAo100 && s.ao100 === bestAo100}
               rowRef={idx === solvesWithAverages.length - 1 ? lastItemRef : undefined}
               isOpen={openScrambleId === s.id}
               onToggleScramble={() => setOpenScrambleId(prev => prev === s.id ? null : s.id)}

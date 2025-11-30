@@ -798,6 +798,11 @@ body {
   text-align: right;
 }
 
+.pb-value {
+  color: var(--accent) !important;
+  font-weight: 700 !important;
+}
+
 .solve-time {
   font-weight: 600;
   color: var(--text-primary);
