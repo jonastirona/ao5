@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 export const corsHeaders = {
