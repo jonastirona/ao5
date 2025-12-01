@@ -1,3 +1,6 @@
+/**
+ * Defines the structure of a UI theme.
+ */
 export interface Theme {
   name: string
   colors: {
@@ -12,6 +15,10 @@ export interface Theme {
   }
 }
 
+/**
+ * Collection of available application themes.
+ * Each theme defines a set of colors used throughout the UI.
+ */
 export const themes: Record<string, Theme> = {
   default: {
     name: 'Default',

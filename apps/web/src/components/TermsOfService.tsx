@@ -1,5 +1,9 @@
 import { Link } from 'react-router-dom'
 
+/**
+ * Terms of Service page component.
+ * Displays the application's terms of service.
+ */
 export default function TermsOfService() {
     return (
         <div className="settings-container">

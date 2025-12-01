@@ -73,6 +73,11 @@ const mapExportToInternalSolve = (solve: ExportSolve, puzzleType: string = '3x3'
 
 // --- Export Functions ---
 
+/**
+ * Exports all sessions to a JSON string compatible with csTimer.
+ * @param sessions List of sessions to export
+ * @returns JSON string representation
+ */
 export function exportAllSessionsToJSON(sessions: Session[]): string {
   // csTimer format:
   // {
@@ -136,6 +141,11 @@ export function exportAllSessionsToJSON(sessions: Session[]): string {
   return JSON.stringify(exportData, null, 2)
 }
 
+/**
+ * Exports a single session to CSV format.
+ * @param session Session to export
+ * @returns CSV string
+ */
 export function exportSessionToCSV(session: Session): string {
   const header = 'timeMs,rawTimeMs,penalty,scramble,timestamp'
   const rows = session.solves.map(s => {
@@ -148,6 +158,11 @@ export function exportSessionToCSV(session: Session): string {
   return [header, ...rows].join('\n')
 }
 
+/**
+ * Exports a single session to plain text format.
+ * @param session Session to export
+ * @returns Plain text string
+ */
 export function exportSessionToText(session: Session): string {
   return session.solves.map(s => {
     const es = mapInternalToExportSolve(s)
@@ -160,6 +175,12 @@ export function exportSessionToText(session: Session): string {
 
 // --- Import Functions ---
 
+/**
+ * Parses imported content (JSON, CSV, or Text) into a list of sessions.
+ * @param content Raw content string
+ * @param fileName Name of the file being imported
+ * @returns List of parsed sessions
+ */
 export function parseImport(content: string, fileName: string): Session[] {
   content = content.trim()
   if (!content) return []

@@ -1,6 +1,10 @@
 import { useState } from 'react'
 import { useAuth } from '../authStore'
 
+/**
+ * Signup form component.
+ * Allows users to create an account with email/password or Google OAuth.
+ */
 export default function Signup() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')

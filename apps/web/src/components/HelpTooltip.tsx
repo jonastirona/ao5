@@ -4,6 +4,9 @@ interface Props {
     onClose: () => void
 }
 
+/**
+ * Tooltip component shown to new users to guide them to the onboarding tour.
+ */
 export default function HelpTooltip({ onClose }: Props) {
     const ref = useRef<HTMLDivElement>(null)
 

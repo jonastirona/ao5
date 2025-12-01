@@ -3,6 +3,10 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useStore } from '../store'
 
+/**
+ * About page component.
+ * Displays application information, global statistics, keybindings, and credits.
+ */
 export default function About() {
     const concurrentUsers = useStore(s => s.concurrentUsers)
     const [globalStats, setGlobalStats] = useState({
@@ -140,7 +144,7 @@ export default function About() {
                 </div>
 
                 <div className="about-footer">
-                    <p>v0.1.0 • <a href="https://github.com/jonastirona/ao5" target="_blank" rel="noopener noreferrer">GitHub</a></p>
+                    <p>v{__APP_VERSION__} • <a href="https://github.com/jonastirona/ao5" target="_blank" rel="noopener noreferrer">GitHub</a></p>
                     <div className="legal-links">
                         <Link to="/privacy" className="legal-link">privacy policy</Link>
                         <Link to="/terms" className="legal-link">terms of service</Link>

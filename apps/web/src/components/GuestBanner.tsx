@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../authStore'
 import { useStore } from '../store'
 
+/**
+ * Banner displayed to guest users after a certain number of solves.
+ * Encourages users to sign up to save their data.
+ */
 export default function GuestBanner() {
     const user = useAuth(s => s.user)
     const guestSolveCount = useStore(s => s.guestSolveCount)

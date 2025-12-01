@@ -1,6 +1,10 @@
 import { useState } from 'react'
 import { useAuth } from '../authStore'
 
+/**
+ * Login form component.
+ * Allows users to sign in with email/password or Google OAuth.
+ */
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')

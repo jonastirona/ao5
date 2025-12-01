@@ -101,8 +101,7 @@ function AppContent() {
     })
   }, [currentTheme])
 
-  // Debug logging
-  console.log('App state:', { isKeyHeld, isTimerRunning, shouldHide })
+
 
   return (
     <>
@@ -185,8 +184,16 @@ function AppContent() {
                 <main className="main" data-tour="timer">
                   <TimerDisplay />
                 </main>
-                <footer className={`footer ${shouldHide ? 'hidden' : ''}`} data-tour="solve-list">
+                <footer className={`footer ${shouldHide ? 'hidden' : ''}`} data-tour="solve-list" style={{ flexDirection: 'column', gap: '0.5rem' }}>
                   <SessionList />
+                  <div style={{
+                    fontSize: '12px',
+                    color: 'var(--text-secondary)',
+                    fontFamily: 'var(--font-mono)',
+                    opacity: 0.7
+                  }}>
+                    v{__APP_VERSION__}
+                  </div>
                 </footer>
               </>
             )}
@@ -204,6 +211,10 @@ function AppContent() {
   )
 }
 
+/**
+ * Root component of the application.
+ * Sets up routing, global state initialization, and the main layout.
+ */
 export default function App() {
   return (
     <BrowserRouter>

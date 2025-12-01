@@ -33,69 +33,119 @@ export interface Settings {
   pbEffectsEnabled: boolean
 }
 
+/**
+ * Main application state interface.
+ * Manages timer state, sessions, solves, and user settings.
+ */
 interface StoreState {
-  // Timer & Scramble
+  // --- Timer & Scramble State ---
+  /** Current scramble string displayed to the user */
   scramble: string
+  /** Current state of the timer (idle, inspection, timing, etc.) */
   timerState: TimerState
+  /** Elapsed time in milliseconds for the current solve */
   elapsedMs: number
+  /** Remaining inspection time in seconds (if inspection is enabled) */
   inspectionLeft: number | null
+  /** The core timer state machine instance */
   timer: TimerStateMachine | null
+  /** Whether the store has been initialized */
   initialized: boolean
+  /** Whether global keyboard listeners are active */
   listening: boolean
+  /** History of generated scrambles for the current session */
   scrambleHistory: string[]
+  /** Index of the currently displayed scramble in history */
   currentScrambleIndex: number
+  /** Whether a key is currently being held down (for starting the timer) */
   isKeyHeld: boolean
+  /** Whether the timer is currently running */
   isTimerRunning: boolean
   
-  // Sessions
+  // --- Session State ---
+  /** List of all user sessions */
   sessions: Session[]
+  /** ID of the currently active session */
   currentSessionId: string
+  /** Number of solves completed by a guest user (triggers login prompt) */
   guestSolveCount: number
+  /** Number of users currently online (realtime presence) */
   concurrentUsers: number
   
-  // Computed Stats (for current session)
+  // --- Computed Statistics (Current Session) ---
+  /** Current Average of 5 */
   ao5: number | null
+  /** Current Average of 12 */
   ao12: number | null
+  /** Current Average of 100 */
   ao100: number | null
+  /** Best single time in the current session */
   best: number | null
+  /** Worst single time in the current session */
   worst: number | null
   
+  /** 
+   * Tracks if the last solve resulted in a Personal Best (PB).
+   * Used to trigger the PB animation.
+   */
   lastSolveWasPB: { types: ('single' | 'ao5' | 'ao12' | 'ao100')[], id: string } | null
+  /** Clears the PB status after animation */
   clearPBStatus: () => void
   
-
-  
-  // Actions
+  // --- Actions ---
+  /** Initialize the store (load from local storage, etc.) */
   init: () => Promise<void>
+  /** Initialize realtime presence (online users count) */
   initPresence: () => void
+  /** Start listening for keyboard events */
   startListening: () => void
+  /** Stop the timer */
   stop: () => Promise<void>
+  /** Reset the timer state */
   reset: () => Promise<void>
+  /** Generate and display the next scramble */
   nextScramble: () => Promise<void>
+  /** Go back to the previous scramble */
   previousScramble: () => Promise<void>
   
-  // Session Actions
+  // --- Session Actions ---
+  /** Create a new session with the given name and puzzle type */
   createSession: (name: string, puzzleType: PuzzleType) => void
+  /** Add an existing session (e.g., from import) */
   addSession: (session: Session) => void
+  /** Switch the active session */
   switchSession: (id: string) => void
+  /** Delete a session by ID */
   deleteSession: (id: string) => void
+  /** Rename a session */
   renameSession: (id: string, name: string) => void
   
-  // Solve Actions
+  // --- Solve Actions ---
+  /** Delete a solve by ID */
   deleteSolve: (id: string) => void
+  /** Update the penalty for a solve (+2, DNF, or none) */
   updateSolvePenalty: (id: string, penalty: "plus2" | "DNF" | null) => void
+  /** Mark a solve as synced with the cloud */
   setSolveSynced: (id: string, synced: boolean) => void
+  /** Update session ID for solves (used during merge) */
   mergeSessionId: (oldId: string, newId: string) => void
 
-  hydrateSolves: (entries: SolveEntry[], cloudSessions?: { id: string, name: string, puzzleType: string }[]) => void // Legacy/Cloud hydration
+  /** Hydrate solves from cloud or legacy storage */
+  hydrateSolves: (entries: SolveEntry[], cloudSessions?: { id: string, name: string, puzzleType: string }[]) => void 
+  /** Get all solves across all sessions */
   getAllSolves: () => SolveEntry[]
+  /** Clear all solves (dangerous) */
   clearSolves: () => void
   
+  /** Current UI theme identifier */
   currentTheme: string
+  /** Set the UI theme */
   setTheme: (theme: string) => void
   
-  // Settings
+  // --- Settings ---
+  /** User settings object */
   settings: Settings
+  /** Update user settings */
   updateSettings: (settings: Partial<Settings>) => void
 }
 
@@ -457,11 +507,7 @@ export const useStore = create<StoreState>((set, get) => ({
                target.tagName === 'SELECT' || 
                target.tagName === 'BUTTON' ||
                target.isContentEditable ||
-               target.closest('[role="dialog"]') !== null // Also ignore if inside a modal? Maybe too aggressive if we want to allow timer in some modals? 
-               // Actually, if we are in a modal, we probably DON'T want to start the timer.
-               // But let's stick to interactive elements first.
-               // If a user is in a modal, they might press Space to close it (if focused on close button) or toggle something.
-               // We should definitely ignore inputs/buttons.
+               target.closest('[role="dialog"]') !== null
     }
 
     const onKeyDown = (e: KeyboardEvent) => {
@@ -487,7 +533,6 @@ export const useStore = create<StoreState>((set, get) => ({
         set({ isKeyHeld: true })
       }
       
-      // Let's stick to Space for timer control to avoid accidental starts while typing (if we add typing).
       if (e.code === 'Space') {
           const state = get()
           

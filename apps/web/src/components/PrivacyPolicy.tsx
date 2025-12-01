@@ -1,5 +1,9 @@
 import { Link } from 'react-router-dom'
 
+/**
+ * Privacy Policy page component.
+ * Displays the application's privacy policy.
+ */
 export default function PrivacyPolicy() {
     return (
         <div className="settings-container">

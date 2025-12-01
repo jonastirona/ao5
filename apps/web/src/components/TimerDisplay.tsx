@@ -2,6 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useStore } from '../store'
 
+/**
+ * Formats milliseconds into a readable timer string (MM:SS.CC).
+ * @param ms Time in milliseconds
+ * @returns Formatted time string
+ */
 function formatMs(ms: number): string {
   const seconds = Math.floor(ms / 1000)
   const centis = Math.floor((ms % 1000) / 10)
@@ -13,6 +18,11 @@ function formatMs(ms: number): string {
   return `${mm}${ss}.${String(centis).padStart(2, '0')}`
 }
 
+/**
+ * Main timer display component.
+ * Handles keyboard and touch interactions for starting/stopping the timer.
+ * Displays the current time, inspection countdown, or ready state.
+ */
 export default function TimerDisplay() {
   const timerState = useStore(s => s.timerState)
   const elapsedMs = useStore(s => s.elapsedMs)

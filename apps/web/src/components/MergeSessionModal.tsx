@@ -4,6 +4,10 @@ import { useAuth } from '../authStore'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import ConfirmationModal from './ConfirmationModal'
 
+/**
+ * Modal shown when a user logs in with local guest data.
+ * Allows merging local data into an existing cloud session, creating a new session, or discarding local data.
+ */
 export default function MergeSessionModal() {
     const mergePrompt = useAuth(s => s.mergePrompt)
     const resolveMerge = useAuth(s => s.resolveMerge)

@@ -8,6 +8,10 @@ interface OnboardingModalProps {
 
 type Tab = 'welcome' | 'features' | 'shortcuts'
 
+/**
+ * Modal providing an onboarding tour for new users.
+ * Explains key features, shortcuts, and benefits of the application.
+ */
 export default function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
     const [activeTab, setActiveTab] = useState<Tab>('welcome')
 

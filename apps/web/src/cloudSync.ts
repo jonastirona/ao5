@@ -1,6 +1,10 @@
 import { supabase } from './lib/supabaseClient'
 import type { SolveEntry } from './store'
 
+/**
+ * Syncs a single solve to the cloud via Supabase Edge Function.
+ * @param entry The solve entry to sync
+ */
 export async function syncSolveToCloud(entry: SolveEntry) {
   try {
     console.log('[sync] Attempting to sync solve:', entry.id, 'Time:', entry.timeMs + 'ms')
@@ -26,6 +30,10 @@ export async function syncSolveToCloud(entry: SolveEntry) {
   }
 }
 
+/**
+ * Fetches all solves for the authenticated user from the cloud.
+ * @returns List of solves or null if error
+ */
 export async function fetchCloudSolves(): Promise<SolveEntry[] | null> {
   try {
     const { data, error } = await supabase.functions.invoke('get-solves')
@@ -52,6 +60,10 @@ export interface CloudSession {
     puzzleType: string
 }
 
+/**
+ * Fetches all sessions for the authenticated user from the cloud.
+ * @returns List of sessions or null if error
+ */
 export async function fetchCloudSessions(): Promise<CloudSession[] | null> {
     try {
         const { data, error } = await supabase.from('sessions').select('*')
@@ -71,6 +83,11 @@ export async function fetchCloudSessions(): Promise<CloudSession[] | null> {
     }
 }
 
+/**
+ * Deletes a solve from the cloud.
+ * @param id ID of the solve to delete
+ * @returns True if successful, false otherwise
+ */
 export async function deleteSolveFromCloud(id: string): Promise<boolean> {
   try {
     // Use direct DB call with RLS instead of Edge Function to avoid CORS/deployment issues
@@ -88,6 +105,13 @@ export async function deleteSolveFromCloud(id: string): Promise<boolean> {
 }
 
 
+/**
+ * Updates a session's metadata in the cloud.
+ * @param id Session ID
+ * @param name New session name
+ * @param puzzleType New puzzle type
+ * @returns True if successful
+ */
 export async function updateCloudSession(id: string, name: string, puzzleType: string): Promise<boolean> {
     try {
         const { error } = await supabase.from('sessions').update({
@@ -106,6 +130,11 @@ export async function updateCloudSession(id: string, name: string, puzzleType: s
     }
 }
 
+/**
+ * Deletes a session from the cloud.
+ * @param id Session ID
+ * @returns True if successful
+ */
 export async function deleteCloudSession(id: string): Promise<boolean> {
     try {
         const { error } = await supabase.from('sessions').delete().eq('id', id)
@@ -121,6 +150,12 @@ export async function deleteCloudSession(id: string): Promise<boolean> {
     }
 }
 
+/**
+ * Updates the penalty for a solve in the cloud.
+ * @param id Solve ID
+ * @param penalty New penalty value
+ * @returns True if successful
+ */
 export async function updateSolvePenaltyInCloud(id: string, penalty: "plus2" | "DNF" | null): Promise<boolean> {
     try {
         const dbPenalty = penalty === 'plus2' ? '+2' : penalty === 'DNF' ? 'DNF' : 'none'

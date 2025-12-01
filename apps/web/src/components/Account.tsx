@@ -7,6 +7,10 @@ type Toast = { id: string; message: string; tone: 'success' | 'error' | 'info' }
 
 import ConfirmationModal from './ConfirmationModal'
 
+/**
+ * Account management page.
+ * Handles user authentication (login, signup, password reset) and profile management.
+ */
 export default function Account() {
   const navigate = useNavigate()
   const location = useLocation()

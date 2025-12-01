@@ -4,6 +4,10 @@ import { useStore } from '../store'
 import { SUPPORTED_EVENTS, type PuzzleType } from 'core'
 import ConfirmationModal from './ConfirmationModal'
 
+/**
+ * Component for managing sessions (create, switch, rename, delete).
+ * Displays a dropdown for session selection and modals for session operations.
+ */
 export default function SessionManager() {
     const sessions = useStore(s => s.sessions)
     const currentSessionId = useStore(s => s.currentSessionId)

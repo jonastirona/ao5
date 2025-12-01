@@ -1,5 +1,13 @@
 import { useEffect, useRef } from 'react'
 
+/**
+ * Hook to trap focus within a container (e.g., modal).
+ * Handles Tab navigation cycling and Escape key to close.
+ * @param isOpen Whether the trap is active
+ * @param onClose Callback when Escape is pressed
+ * @param existingRef Optional existing ref to use for the container
+ * @returns Ref to attach to the container
+ */
 export function useFocusTrap(isOpen: boolean, onClose?: () => void, existingRef?: React.RefObject<HTMLDivElement | null>) {
   const internalRef = useRef<HTMLDivElement>(null)
   const containerRef = existingRef || internalRef

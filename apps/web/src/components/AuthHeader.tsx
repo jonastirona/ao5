@@ -1,6 +1,10 @@
 import { useEffect } from 'react'
 import { useAuth } from '../authStore'
 
+/**
+ * Component displayed in the header to show user authentication status.
+ * Displays user email and logout button if logged in.
+ */
 export default function AuthHeader() {
   const user = useAuth(s => s.user)
   const initializing = useAuth(s => s.initializing)

@@ -4,17 +4,32 @@ import { useStore, type SolveEntry } from '../store'
 import { calculateAverages } from 'core'
 import ConfirmationModal from './ConfirmationModal'
 
+/**
+ * Formats milliseconds into seconds with 2 decimal places.
+ * @param ms Time in milliseconds
+ * @returns Formatted string (e.g., "12.34")
+ */
 function formatTime(ms: number) {
   const s = (ms / 1000).toFixed(2)
   return s
 }
 
+/**
+ * Formats a solve entry for display, handling penalties.
+ * @param solve The solve entry
+ * @returns Formatted string (e.g., "12.34", "14.34+", "DNF")
+ */
 function formatSolve(solve: SolveEntry) {
   if (solve.penalty === 'DNF') return 'DNF'
   const time = formatTime(solve.timeMs + (solve.penalty === 'plus2' ? 2000 : 0))
   return solve.penalty === 'plus2' ? `${time}+` : time
 }
 
+/**
+ * Formats an average time.
+ * @param ms Average time in milliseconds
+ * @returns Formatted string or placeholder
+ */
 function formatAverage(ms: number | null) {
   if (ms === null) return '_'
   if (ms === -1) return 'DNF'
@@ -38,6 +53,10 @@ type SolveRowProps = {
   rowRef?: React.RefObject<HTMLDivElement | null>
 }
 
+/**
+ * Component representing a single row in the session list.
+ * Displays time, averages, and provides a menu for penalties/deletion.
+ */
 function SolveRow({
   solve,
   index,
@@ -201,6 +220,10 @@ function SolveRow({
 
 const EMPTY_SOLVES: SolveEntry[] = []
 
+/**
+ * Displays the list of solves for the current session.
+ * Handles expanding/collapsing the list and managing solve actions (delete, penalty).
+ */
 export default function SessionList() {
   const [isExpanded, setIsExpanded] = useState(false)
   const [openScrambleId, setOpenScrambleId] = useState<string | null>(null)

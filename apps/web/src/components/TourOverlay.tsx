@@ -116,6 +116,10 @@ const TOUR_STEPS: TourStep[] = [
     }
 ]
 
+/**
+ * Interactive tour overlay component.
+ * Guides the user through key features of the application using a spotlight effect.
+ */
 export default function TourOverlay({ isOpen, onClose }: TourOverlayProps) {
     const [currentStepIndex, setCurrentStepIndex] = useState(0)
     const [targetRect, setTargetRect] = useState<DOMRect | null>(null)

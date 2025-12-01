@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../authStore'
 import { useStore } from '../store'
 
+/**
+ * Component that monitors and displays network connectivity status.
+ * Shows offline/online badges and sync status notifications.
+ */
 export default function NetworkStatus() {
     const [isOffline, setIsOffline] = useState(!navigator.onLine)
     const [showSyncNotification, setShowSyncNotification] = useState(false)

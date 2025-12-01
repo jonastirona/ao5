@@ -1,6 +1,9 @@
 import { useAuth } from '../authStore'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 
+/**
+ * Modal prompting the user to log in after completing a certain number of solves as a guest.
+ */
 export default function LoginPromptModal() {
     const showLoginPrompt = useAuth(s => s.showLoginPrompt)
     const setShowLoginPrompt = useAuth(s => s.setShowLoginPrompt)
@@ -20,18 +23,7 @@ export default function LoginPromptModal() {
                     <button
                         className="primary-btn"
                         onClick={() => {
-                            // Trigger the main auth modal (assuming App.tsx handles this via a separate state or we reuse this modal as entry)
-                            // Actually, let's just close this and open the main auth modal if possible, 
-                            // OR we can just render the Auth form here.
-                            // For now, let's assume clicking this opens the main AuthModal.
-                            // But wait, we don't have a global "openAuthModal" action exposed easily unless we use the one in App.tsx.
-                            // Let's dispatch a custom event or use a store action if available.
-                            // Since we don't have a global "openAuthModal", let's just use the `setShowLoginPrompt` to close this 
-                            // and maybe we need a way to open the real AuthModal.
-                            // Let's assume the user can click the "Account" button in the header.
-                            // BETTER: Let's make this modal HAVE the login/signup buttons directly or redirect to it.
-                            // Simplest: Just tell them to click the account button or provide a button that triggers the same state as the account button.
-                            // Let's dispatch a custom event 'open-auth-modal' that App.tsx listens to.
+                            // Trigger the main auth modal
                             window.dispatchEvent(new CustomEvent('open-auth-modal'))
                             setShowLoginPrompt(false)
                         }}

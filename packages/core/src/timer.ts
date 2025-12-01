@@ -7,6 +7,11 @@ export interface TimerEventHandlers {
   onStop?: (elapsedMs: number, penalty?: "plus2" | "DNF") => void;
 }
 
+/**
+ * State machine for the speedcubing timer.
+ * Handles transitions between Idle, Inspection, Ready, Timing, and Stopped states.
+ * Manages WCA-compliant inspection timing and penalties.
+ */
 export class TimerStateMachine {
   private state: TimerState = "idle";
   private startTimeMs: number | null = null;
@@ -27,6 +32,10 @@ export class TimerStateMachine {
     this.handlers = handlers;
   }
 
+  /**
+   * Updates timer configuration settings.
+   * @param settings Configuration object
+   */
   public updateSettings(settings: { inspectionDurationMs?: number, holdDurationMs?: number, inspectionEnabled?: boolean }): void {
     if (settings.inspectionDurationMs !== undefined) {
       this.inspectionDurationMs = settings.inspectionDurationMs;
@@ -39,10 +48,18 @@ export class TimerStateMachine {
     }
   }
 
+  /**
+   * Returns the current state of the timer.
+   */
   public getState(): TimerState {
     return this.state;
   }
 
+  /**
+   * Handles key down events to trigger state transitions.
+   * @param _code Key code (unused currently, but kept for API consistency)
+   * @param opts Options (e.g., repeat flag)
+   */
   public handleKeyDown(_code: string, opts?: { repeat?: boolean }): void {
     if (opts?.repeat) return; // ignore repeats for stability
     if (this.isKeyDown) return;
@@ -59,6 +76,10 @@ export class TimerStateMachine {
     }
   }
 
+  /**
+   * Handles key up events. Starts the timer or inspection if hold time is met.
+   * @param _code Key code
+   */
   public handleKeyUp(_code: string): void {
     if (!this.isKeyDown) return;
     this.isKeyDown = false;
@@ -85,6 +106,9 @@ export class TimerStateMachine {
     }
   }
 
+  /**
+   * Starts the inspection phase.
+   */
   public startInspection(): void {
     if (this.state !== "idle" && this.state !== "stopped" && this.state !== "ready") return;
     this.inspectionStartTime = Date.now();
@@ -115,6 +139,9 @@ export class TimerStateMachine {
     }, 100);
   }
 
+  /**
+   * Starts the main timer.
+   */
   public start(): void {
     if (this.state === "timing") return;
     
@@ -133,6 +160,9 @@ export class TimerStateMachine {
     }, 10);
   }
 
+  /**
+   * Stops the timer and records the solve time.
+   */
   public stop(): void {
     if (this.state !== "timing" || this.startTimeMs == null) return;
     const elapsed = Date.now() - this.startTimeMs;
@@ -145,6 +175,9 @@ export class TimerStateMachine {
     this.penalty = null;
   }
 
+  /**
+   * Resets the timer to the idle state.
+   */
   public reset(): void {
     this.clearTiming();
     if (this.inspectionIntervalId) {
@@ -156,6 +189,9 @@ export class TimerStateMachine {
     this.transition("idle");
   }
 
+  /**
+   * Clears the main timing interval.
+   */
   private clearTiming(): void {
     if (this.tickIntervalId) {
       clearInterval(this.tickIntervalId);

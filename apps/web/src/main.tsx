@@ -31,6 +31,11 @@ if (!isLocalhost && import.meta.env.VITE_POSTHOG_KEY) {
   })
 }
 
+/**
+ * Application entry point.
+ * Initializes Sentry and PostHog for production monitoring and analytics.
+ * Renders the root App component.
+ */
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />

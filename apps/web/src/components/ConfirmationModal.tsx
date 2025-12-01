@@ -13,6 +13,10 @@ interface ConfirmationModalProps {
     isDangerous?: boolean
 }
 
+/**
+ * Generic modal component for confirming user actions.
+ * Supports dangerous actions with distinct styling.
+ */
 export default function ConfirmationModal({
     isOpen,
     title,

@@ -4,6 +4,11 @@ interface GlobalShortcutsProps {
     openOnboarding: () => void
 }
 
+/**
+ * Handles global keyboard shortcuts for the application.
+ * Currently supports:
+ * - '?' or Shift+/ : Open onboarding tour
+ */
 export default function GlobalShortcuts({ openOnboarding }: GlobalShortcutsProps) {
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {

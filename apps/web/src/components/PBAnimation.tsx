@@ -1,6 +1,10 @@
 import { useEffect, useState, useRef } from 'react'
 import { useStore } from '../store'
 
+/**
+ * Displays an animation when a new Personal Best (PB) is achieved.
+ * Supports different visual styles for major (single/ao5) vs minor PBs.
+ */
 export default function PBAnimation() {
     const lastSolveWasPB = useStore(s => s.lastSolveWasPB)
     const clearPBStatus = useStore(s => s.clearPBStatus)

@@ -3,6 +3,10 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../authStore'
 
+/**
+ * Support page component.
+ * Provides options for donations, viewing ad status, and sending feedback.
+ */
 export default function Support() {
     const [activeTab, setActiveTab] = useState<'donate' | 'ads' | 'feedback'>('donate')
     const [isSubmitting, setIsSubmitting] = useState(false)

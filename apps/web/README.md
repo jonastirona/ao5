@@ -1,69 +1,71 @@
-# React + TypeScript + Vite
+# ao5 - Speedcubing Timer
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+<div align="center">
+  <img src="public/logo.png" alt="ao5 logo" width="120" />
+  <h1>ao5</h1>
+  <p><strong>A modern, feature-rich, and open-source speedcubing timer.</strong></p>
+  
+  [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+  [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/jonastirona/ao5)
+  [![Website](https://img.shields.io/website?url=https%3A%2F%2Fao5.app)](https://ao5.app)
+</div>
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Cube Timer**: Accurate timing with inspection and keyboard shortcuts.
+- **Cloud Sync**: Seamlessly sync your sessions and stats across devices (requires login).
+- **Advanced Analytics**: Track your progress with detailed statistics (Ao5, Ao12, Ao100, Mean, Std Dev) and interactive graphs.
+- **All WCA Puzzles**: Official scrambles for 3x3, 4x4, 5x5, 6x6, 7x7, Pyraminx, Megaminx, Skewb, Square-1, and Clock.
+- **Session Management**: Organize your solves into sessions, rename them, and merge guest data.
+- **Customization**: Choose from many themes to match your style.
+- **Import/Export**: Easy migration from CSTimer and JSON data backup.
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Prerequisites
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- Node.js (v18 or later)
+- pnpm (v8 or later)
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+### Installation
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+1.  **Clone the repository**:
+    ```bash
+    git clone https://github.com/jonastirona/ao5.git
+    cd ao5
+    ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+2.  **Install dependencies**:
+    ```bash
+    pnpm install
+    ```
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+3.  **Start the development server**:
+    ```bash
+    pnpm dev
+    ```
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+4.  Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+## Tech Stack
+
+- **Frontend**: React, TypeScript, Vite
+- **State Management**: Zustand
+- **Styling**: CSS Modules / Vanilla CSS
+- **Backend/Auth**: Supabase
+- **Charts**: Plotly.js / Recharts
+- **PWA**: vite-plugin-pwa
+
+## Contributing
+
+Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTING.md) for details on how to submit pull requests, report issues, and suggest improvements.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Support
+
+If you enjoy using ao5, please consider helping pay the bills!!
+
+<a href='https://ko-fi.com/jonastirona' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi2.png?v=3' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>

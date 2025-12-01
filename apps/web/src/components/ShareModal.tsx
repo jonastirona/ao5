@@ -12,6 +12,10 @@ interface ShareModalProps {
 
 import { useFocusTrap } from '../hooks/useFocusTrap'
 
+/**
+ * Modal for sharing solve results or statistics.
+ * Supports copying to clipboard, native share API, and Twitter sharing.
+ */
 export default function ShareModal({ isOpen, onClose, solveId, title, value }: ShareModalProps) {
     const [isCopied, setIsCopied] = useState(false)
     const modalRef = useFocusTrap(isOpen, onClose)

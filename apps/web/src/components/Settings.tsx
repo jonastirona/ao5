@@ -5,6 +5,10 @@ import { useState } from 'react'
 import { exportAllSessionsToJSON, parseImport } from '../lib/importExport'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 
+/**
+ * Settings page component.
+ * Allows users to configure timer settings, manage data (import/export), and change themes.
+ */
 export default function Settings() {
     const settings = useStore(s => s.settings)
     const updateSettings = useStore(s => s.updateSettings)

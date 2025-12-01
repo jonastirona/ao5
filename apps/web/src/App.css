@@ -612,7 +612,7 @@ body {
 
 
 .timer-container::after {
-  content: "hold any key to start timer";
+  content: "hold space to start timer";
   position: absolute;
   bottom: -60px;
   left: 50%;

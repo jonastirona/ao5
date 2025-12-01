@@ -14,6 +14,11 @@ import {
 } from 'recharts'
 import { Link } from 'react-router-dom'
 
+/**
+ * Formats milliseconds into MM:SS.CC or SS.CC format.
+ * @param ms Time in milliseconds
+ * @returns Formatted time string
+ */
 function formatTime(ms: number) {
     const totalSeconds = ms / 1000
     const minutes = Math.floor(totalSeconds / 60)
@@ -24,6 +29,12 @@ function formatTime(ms: number) {
 
 type TimeRange = 'today' | 'week' | 'month' | '3months' | 'year' | 'all'
 
+/**
+ * Filters a list of solves by a specific time range relative to now.
+ * @param solves List of solve entries
+ * @param range Time range to filter by
+ * @returns Filtered list of solves
+ */
 const filterByTime = (solves: import('../store').SolveEntry[], range: string) => {
     const now = new Date()
     const cutoff = new Date()
@@ -39,6 +50,11 @@ const filterByTime = (solves: import('../store').SolveEntry[], range: string) =>
     return solves.filter(s => s.timestamp >= cutoff.getTime())
 }
 
+/**
+ * Analytics dashboard component.
+ * Displays detailed statistics, activity heatmap, progression charts, and time distribution.
+ * Allows filtering by session or puzzle type.
+ */
 export default function Analytics() {
     const [filter, setFilter] = useState<'session' | 'type'>('session')
     const [selectedType, setSelectedType] = useState<string>('333')

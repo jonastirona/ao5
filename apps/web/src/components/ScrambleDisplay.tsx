@@ -2,6 +2,9 @@ import { useStore } from '../store'
 import { useEffect, useRef } from 'react'
 import { TwistyPlayer } from 'cubing/twisty'
 
+/**
+ * Maps internal puzzle types to TwistyPlayer puzzle IDs.
+ */
 const PUZZLE_MAPPING: Record<string, string> = {
   '3x3': '3x3x3',
   '2x2': '2x2x2',
@@ -16,6 +19,10 @@ const PUZZLE_MAPPING: Record<string, string> = {
   '333mbf': '3x3x3'
 }
 
+/**
+ * Displays the current scramble text and an optional 2D/3D visualization.
+ * Uses TwistyPlayer for rendering the puzzle state.
+ */
 export default function ScrambleDisplay() {
   const scramble = useStore(s => s.scramble)
   const nextScramble = useStore(s => s.nextScramble)

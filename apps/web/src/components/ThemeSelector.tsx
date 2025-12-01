@@ -1,6 +1,10 @@
 import { useStore } from '../store'
 import { themes } from '../themes'
 
+/**
+ * Component for selecting the application theme.
+ * Displays a grid of available themes with previews.
+ */
 export default function ThemeSelector() {
     const currentTheme = useStore(s => s.currentTheme)
     const setTheme = useStore(s => s.setTheme)

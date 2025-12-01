@@ -10,7 +10,12 @@ const userSetupPromises = new Map<string, Promise<void>>()
 // Prevent concurrent hydrations
 let isHydratingCloudSolves = false
 
+/**
+ * Authentication state interface.
+ * Manages user login, session, and cloud synchronization.
+ */
 interface AuthState {
+  /** Current authenticated user object */
   user: { 
     id: string
     email?: string | null
@@ -19,35 +24,63 @@ interface AuthState {
     user_metadata?: { [key: string]: any }
     app_metadata?: { provider?: string; providers?: string[] }
   } | null
+  /** Current Supabase session */
   session: Session | null
+  /** Whether auth is currently initializing */
   initializing: boolean
+  /** Last error message, if any */
   error: string | null
+  /** Current user's display name */
   username: string | null
-  // Offline/local solves sync prompt state
+  
+  // --- Offline/Sync State ---
+  /** Number of local-only solves pending sync */
   pendingLocalOnlyCount: number
+  /** Whether to prompt the user to sync local solves */
   shouldPromptSync: boolean
+  /** Timestamp of the last successful cloud sync */
   lastSyncTime: number | null
+  /** Whether to show the login prompt modal */
   showLoginPrompt: boolean
+  /** State for the session merge prompt (when logging in with local data) */
   mergePrompt: { isOpen: boolean, localSessionId: string, cloudSessions: { id: string, name: string, puzzleType: string }[] } | null
 
+  /** Set the merge prompt state */
   setMergePrompt: (prompt: AuthState['mergePrompt']) => void
+  /** Resolve the merge prompt (merge, create new, or discard) */
   resolveMerge: (action: 'merge' | 'create' | 'discard', targetSessionId?: string) => Promise<void>
 
+  /** Toggle the login prompt visibility */
   setShowLoginPrompt: (show: boolean) => void
+  /** Initialize auth state */
   init: () => Promise<void>
+  /** Sign up with email and password */
   signUpWithEmailPassword: (email: string, password: string, username: string) => Promise<void>
+  /** Sign in with email and password */
   signInWithEmailPassword: (email: string, password: string) => Promise<void>
+  /** Sign in with Google OAuth */
   signInWithGoogle: () => Promise<void>
+  /** Sign out the current user */
   signOut: () => Promise<void>
+  /** Fetch latest data from cloud */
   hydrateFromCloud: () => Promise<void>
+  /** Sync local-only solves to the cloud */
   syncLocalSolvesToCloud: () => Promise<void>
+  /** Dismiss the sync prompt */
   dismissSyncPrompt: () => void
+  /** Update user email */
   updateEmail: (email: string) => Promise<void>
+  /** Update user password */
   updatePassword: (password: string) => Promise<void>
+  /** Send password reset email */
   resetPassword: (email: string) => Promise<void>
+  /** Delete user account */
   deleteAccount: () => Promise<void>
+  /** Clear all user data from local state */
   clearUserData: () => Promise<void>
+  /** Check if a username is available */
   checkUsernameUnique: (username: string) => Promise<boolean>
+  /** Update the user's display name */
   updateUsername: (username: string) => Promise<void>
 }
 
@@ -506,7 +539,6 @@ async function ensureProfileAndHydration(userId: string): Promise<void> {
         console.log('[auth] Profile found with username:', profile.username)
       }
 
-      // Always use the profile's username from database - never overwrite with fallback
       if (profile && profile.username) {
         useAuth.setState({ username: profile.username })
       }
@@ -515,10 +547,7 @@ async function ensureProfileAndHydration(userId: string): Promise<void> {
       console.log('[auth] Checking for local work...')
       try {
           const localSolves = useStore.getState().getAllSolves()
-          // Check if we have any local solves that are NOT synced (which is all of them for a guest)
-          // Actually, for a guest, 'synced' is false or undefined.
-          // But we should check if there are ANY solves.
-          // Filter to only truly local (unsynced) solves
+          // Check if we have any local solves that are NOT synced
           const unsyncedSolves = localSolves.filter(s => !s.synced)
           
           if (unsyncedSolves.length > 0) {
