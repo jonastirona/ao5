@@ -545,6 +545,31 @@ body {
   cursor: pointer;
 }
 
+.timer-abort-btn {
+  display: none;
+  position: absolute;
+  top: -40px;
+  right: 0;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: var(--text-secondary);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 18px;
+  cursor: pointer;
+  z-index: 20;
+  touch-action: manipulation;
+}
+
+@media (max-width: 768px) {
+  .timer-abort-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
 .timer-display {
   font-family: 'JetBrains Mono', 'Courier New', monospace;
   font-size: 80px;
@@ -1504,7 +1529,7 @@ body {
 .solves-list-container.expanded {
   max-height: min(400px, 70vh);
   opacity: 1;
-  transform: translateY(0);
+  transform: translateX(-50%) translateY(0);
   overflow-y: auto;
   pointer-events: auto;
   visibility: visible;
@@ -1514,13 +1539,21 @@ body {
   position: fixed;
   /* Fix to viewport to avoid clipping by parents */
   bottom: var(--space-2);
-  left: var(--space-2);
-  right: var(--space-2);
-  width: auto;
+  left: 50%;
+  right: auto;
+  width: calc(100% - 2 * var(--space-2));
   max-width: 560px;
   /* Limit width on larger screens */
-  margin: 0 auto;
+  margin: 0;
   /* Center it */
+}
+
+@media (max-width: 768px) {
+  .timer-container {
+    width: 80% !important;
+    max-width: 300px;
+    margin: 0 auto;
+  }
 }
 
 @media (orientation: portrait) {

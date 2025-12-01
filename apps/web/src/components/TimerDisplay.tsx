@@ -134,6 +134,18 @@ export default function TimerDisplay() {
       <div className={`timer-display ${stateClass} ${shouldFocus ? 'focused' : ''}`}>
         {displayValue}
       </div>
+
+      <button
+        className="timer-abort-btn"
+        onClick={(e) => {
+          e.stopPropagation()
+          timer?.reset()
+          useStore.setState({ isKeyHeld: false })
+        }}
+        aria-label="Abort timer"
+      >
+        ✕
+      </button>
     </div>
   )
 }
