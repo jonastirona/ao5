@@ -1,7 +1,7 @@
 # ao5 - Speedcubing Timer
 
 <div align="center">
-  <img src="public/logo.png" alt="ao5 logo" width="120" />
+  <img src="apps/web/public/logo.png" alt="ao5 logo" width="120" />
   <p><strong>A modern, feature-rich, and open-source speedcubing timer.</strong></p>
   
   [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
