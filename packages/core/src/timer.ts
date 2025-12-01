@@ -36,7 +36,7 @@ export class TimerStateMachine {
     return this.state;
   }
 
-  public handleKeyDown(code: string, opts?: { repeat?: boolean }): void {
+  public handleKeyDown(_code: string, opts?: { repeat?: boolean }): void {
     if (opts?.repeat) return; // ignore repeats for stability
     if (this.isKeyDown) return;
     this.isKeyDown = true;
@@ -52,7 +52,7 @@ export class TimerStateMachine {
     }
   }
 
-  public handleKeyUp(code: string): void {
+  public handleKeyUp(_code: string): void {
     if (!this.isKeyDown) return;
     this.isKeyDown = false;
     
