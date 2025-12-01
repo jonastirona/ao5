@@ -413,7 +413,8 @@ export const useStore = create<StoreState>((set, get) => ({
     
     timer.updateSettings({ 
         inspectionDurationMs: settings.inspectionDuration,
-        holdDurationMs: holdDurationMs
+        holdDurationMs: holdDurationMs,
+        inspectionEnabled: settings.inspectionEnabled
     })
     set({ timer })
   },
@@ -496,13 +497,8 @@ export const useStore = create<StoreState>((set, get) => ({
           }
 
           if (state.timerState === 'idle') {
-              if (state.settings.inspectionEnabled) {
-                  // Start inspection
-                  timer.startInspection()
-              } else {
-                  // Go to ready
-                  timer.handleKeyDown(e.code, { repeat: e.repeat })
-              }
+              // Always go to ready (timer handles inspection logic)
+              timer.handleKeyDown(e.code, { repeat: e.repeat })
           } else if (state.timerState === 'inspection') {
                // In inspection, pressing space prepares for ready
                timer.handleKeyDown(e.code, { repeat: e.repeat })
@@ -1114,8 +1110,11 @@ export const useStore = create<StoreState>((set, get) => ({
       const updated = { ...state.settings, ...newSettings }
       
       // Update timer if needed
-      if (newSettings.inspectionDuration) {
-          state.timer?.updateSettings({ inspectionDurationMs: updated.inspectionDuration })
+      if (newSettings.inspectionDuration || newSettings.inspectionEnabled !== undefined) {
+          state.timer?.updateSettings({ 
+              inspectionDurationMs: updated.inspectionDuration,
+              inspectionEnabled: updated.inspectionEnabled
+          })
       }
 
       set({ settings: updated })

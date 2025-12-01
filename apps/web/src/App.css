@@ -1483,10 +1483,16 @@ body {
     pointer-events: auto;
     transform: scale(0.8);
     transform-origin: bottom center;
-    margin-bottom: 4px;
+    margin: 0 auto 4px auto;
     max-width: min(560px, 100vw);
     min-width: 0;
     box-sizing: border-box;
+  }
+
+  @media (max-width: 768px) {
+    .timer-container::after {
+      content: "tap and hold to start";
+    }
   }
 
   /* Hide visualization in landscape to save space, or make it very small */

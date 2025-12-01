@@ -15,6 +15,7 @@ export class TimerStateMachine {
   private isKeyDown: boolean = false;
   private keyDownTime: number = 0;
   private minHoldTime: number = 300; // Default 300ms
+  private inspectionEnabled: boolean = false;
   
   // Inspection
   private inspectionStartTime: number | null = null;
@@ -26,12 +27,15 @@ export class TimerStateMachine {
     this.handlers = handlers;
   }
 
-  public updateSettings(settings: { inspectionDurationMs?: number, holdDurationMs?: number }): void {
+  public updateSettings(settings: { inspectionDurationMs?: number, holdDurationMs?: number, inspectionEnabled?: boolean }): void {
     if (settings.inspectionDurationMs !== undefined) {
       this.inspectionDurationMs = settings.inspectionDurationMs;
     }
     if (settings.holdDurationMs !== undefined) {
       this.minHoldTime = settings.holdDurationMs;
+    }
+    if (settings.inspectionEnabled !== undefined) {
+      this.inspectionEnabled = settings.inspectionEnabled;
     }
   }
 
@@ -64,7 +68,11 @@ export class TimerStateMachine {
     if (this.state === "ready") {
         // If coming from inspection, allow instant start (ignore minHoldTime)
         if (this.inspectionStartTime || holdTime >= this.minHoldTime) {
-            this.start();
+            if (this.inspectionEnabled && !this.inspectionStartTime) {
+                this.startInspection();
+            } else {
+                this.start();
+            }
         } else {
             // If released too early, go back to previous state
             if (this.inspectionStartTime) {
