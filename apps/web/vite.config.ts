@@ -51,5 +51,10 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: []
+  },
+  resolve: {
+    alias: {
+      core: '../../packages/core/src/index.ts'
+    }
   }
 })
