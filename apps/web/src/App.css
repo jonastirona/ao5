@@ -698,6 +698,7 @@ body {
 
 /* Collapsed card showing only the latest solve (no scroll) */
 .session-collapsed {
+  width: 100%;
   background: var(--bg);
   border-radius: 12px;
   box-shadow: var(--shadow);
@@ -1667,6 +1668,7 @@ body {
 /* Solve row wrapper (for borders) */
 .solve-item-wrapper {
   border-bottom: none;
+  width: 100%;
 }
 
 .solve-item-wrapper:last-child {
