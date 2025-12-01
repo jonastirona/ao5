@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useStore } from '../store'
 
 function formatMs(ms: number): string {
@@ -152,19 +153,22 @@ export default function TimerDisplay() {
         {displayValue}
       </div>
 
-      {(timerState === 'timing' || timerState === 'inspection') && (
-        <button
-          className="timer-abort-btn"
-          onClick={(e) => {
-            e.stopPropagation()
-            e.preventDefault() // Prevent ghost clicks
-            timer?.reset()
-            useStore.setState({ isKeyHeld: false })
-          }}
-          aria-label="Abort timer"
-        >
-          ✕
-        </button>
+      {createPortal(
+        (timerState === 'timing' || timerState === 'inspection') && (
+          <button
+            className="timer-abort-btn"
+            onClick={(e) => {
+              e.stopPropagation()
+              e.preventDefault()
+              timer?.reset()
+              useStore.setState({ isKeyHeld: false })
+            }}
+            aria-label="Abort timer"
+          >
+            ✕
+          </button>
+        ),
+        document.body
       )}
     </div>
   )
