@@ -34,6 +34,12 @@ const TOUR_STEPS: TourStep[] = [
         position: 'bottom'
     },
     {
+        target: 'session-selector',
+        title: 'sessions',
+        content: 'manage your sessions here. create new ones for different puzzles or organize your solves.',
+        position: 'bottom'
+    },
+    {
         target: 'solve-list',
         title: 'session list',
         content: 'view your recent solves here. you can delete solves or change penalties if needed.',
@@ -73,9 +79,21 @@ const TOUR_STEPS: TourStep[] = [
         position: 'center'
     },
     {
+        target: 'help-button',
+        title: 'help',
+        content: 'click this anytime to replay this tour.',
+        position: 'bottom'
+    },
+    {
         target: 'stats-link',
         title: 'analytics',
         content: 'click here to view detailed statistics, progression charts, and heatmaps of your activity.',
+        position: 'bottom'
+    },
+    {
+        target: 'support-link',
+        title: 'support',
+        content: 'want to support us? found a bug? reach out here.',
         position: 'bottom'
     },
     {
@@ -94,12 +112,6 @@ const TOUR_STEPS: TourStep[] = [
         target: 'account-link',
         title: 'profile',
         content: 'manage your account settings, view your profile, and sign out.',
-        position: 'bottom'
-    },
-    {
-        target: 'support-link',
-        title: 'support',
-        content: 'want to support us? found a bug? reach out here.',
         position: 'bottom'
     }
 ]
@@ -124,7 +136,7 @@ export default function TourOverlay({ isOpen, onClose }: TourOverlayProps) {
             // The card is 320px wide + padding.
             // ADJUST WELCOME SPOTLIGHT WIDTH HERE
             const width = 320 // User preference
-            const height = step.target === 'shortcuts-info' ? 385 : 170 // Approximate height
+            const height = step.target === 'shortcuts-info' ? 345 : 170 // Approximate height
             return {
                 top: window.innerHeight / 2 - height / 2,
                 left: window.innerWidth / 2 - width / 2,

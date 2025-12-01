@@ -104,7 +104,13 @@ export default function Settings() {
     }
 
     return (
-        <div className="settings-container" ref={containerRef}>
+        <div
+            className={`settings-container ${isDragging ? 'dragging-global' : ''}`}
+            ref={containerRef}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+        >
             <div className="settings-header">
                 <h2>settings</h2>
                 <Link to="/" className="close-btn">×</Link>
@@ -242,9 +248,6 @@ export default function Settings() {
                                 <h4>import sessions</h4>
                                 <div
                                     className={`drop-zone ${isDragging ? 'dragging' : ''}`}
-                                    onDragOver={handleDragOver}
-                                    onDragLeave={handleDragLeave}
-                                    onDrop={handleDrop}
                                 >
                                     <div className="file-input-wrapper full-width">
                                         <button className="btn ghost full-width">

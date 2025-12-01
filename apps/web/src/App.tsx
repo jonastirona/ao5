@@ -113,6 +113,7 @@ function AppContent() {
               className={`header-link ${shouldHide ? 'hidden' : ''}`}
               onClick={handleStartTour}
               aria-label="Help"
+              data-tour="help-button"
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', marginRight: '0.5rem' }}
             >
               <svg className="icon" viewBox="0 0 24 24" fill="currentColor">

@@ -1626,6 +1626,8 @@ body {
   border-radius: 12px;
   padding: 1.5rem;
   margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
 }
 
 .settings-section h3 {
@@ -1723,6 +1725,39 @@ input:checked+.slider:before {
   border-radius: 8px;
   padding: 4px;
   transition: all 0.2s;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 120px;
+  /* Ensure a decent minimum height */
+}
+
+.data-actions-col {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 2rem;
+}
+
+.data-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.data-group:last-child {
+  flex: 1;
+}
+
+.file-input-wrapper.full-width {
+  height: 100%;
+  flex: 1;
+}
+
+.file-input-wrapper.full-width .btn {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .drop-zone.dragging {
@@ -2491,6 +2526,26 @@ input:checked+.slider:before {
   display: flex;
   gap: 1rem;
   margin-bottom: 2rem;
+}
+
+/* Global Drag Overlay */
+.settings-container.dragging-global::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(158, 197, 171, 0.1);
+  border: 2px dashed var(--accent);
+  border-radius: 16px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.settings-container.dragging-global .drop-zone {
+  border-color: var(--accent);
+  background: rgba(158, 197, 171, 0.1);
 }
 
 /* Share Modal */

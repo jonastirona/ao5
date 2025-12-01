@@ -77,7 +77,7 @@ export default function SessionManager() {
 
     return (
         <div className="session-manager">
-            <div className="session-selector" ref={dropdownRef}>
+            <div className="session-selector" ref={dropdownRef} data-tour="session-selector">
                 <button
                     className="session-trigger"
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
