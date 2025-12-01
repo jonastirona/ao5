@@ -63,20 +63,29 @@ export default function ScrambleDisplay() {
   }, [scramble, puzzleType, settings.showScrambleImage, settings.scrambleVisualization3D])
 
   return (
-    <div className="scramble-wrapper" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+    <div className="scramble-wrapper" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', width: '100%', maxWidth: '100vw', minWidth: 0, boxSizing: 'border-box' }}>
       <div className="scramble-container">
         <button
           className="scramble-nav-btn"
           onClick={previousScramble}
           aria-label="previous scramble"
+          disabled={scramble === 'Loading...'}
         >
           ←
         </button>
-        <div className="scramble-text" style={{ maxWidth: '800px', textAlign: 'center', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{scramble}</div>
+        {scramble === 'Loading...' ? (
+          <div className="scramble-loading">
+            <div className="spinner-small"></div>
+            <span>generating scramble...</span>
+          </div>
+        ) : (
+          <div className="scramble-text">{scramble}</div>
+        )}
         <button
           className="scramble-nav-btn"
           onClick={nextScramble}
           aria-label="next scramble"
+          disabled={scramble === 'Loading...'}
         >
           →
         </button>

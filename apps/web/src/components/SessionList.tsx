@@ -60,10 +60,39 @@ function SolveRow({
   useLayoutEffect(() => {
     if (isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect()
-      // Position above the button, aligned right
+      const menuWidth = 220 // Approximate menu width, will be adjusted
+      const menuHeight = 200 // Approximate menu height
+      const padding = 8 // Minimum distance from screen edge
+
+      // Calculate horizontal position (centered on button)
+      let left = rect.left + (rect.width / 2) - (menuWidth / 2)
+
+      // Clamp to ensure it stays on screen horizontally
+      left = Math.max(padding, Math.min(left, window.innerWidth - menuWidth - padding))
+
+      // Calculate vertical position (above button)
+      let bottom: number | undefined = window.innerHeight - rect.top + padding
+      let top: number | undefined = undefined
+
+      // Check if menu would go off screen at the top
+      const spaceAbove = rect.top
+      const spaceBelow = window.innerHeight - rect.bottom
+
+      // If there's not enough space above, position below the button instead
+      if (spaceAbove < menuHeight + padding && spaceBelow > menuHeight + padding) {
+        // Position below button
+        top = rect.bottom + padding
+        bottom = undefined
+      } else if (spaceAbove < menuHeight + padding) {
+        // Not enough space above or below, use available space
+        bottom = Math.min(bottom!, window.innerHeight - padding)
+      }
+
       setMenuPos({
-        bottom: window.innerHeight - rect.top + 8, // 8px gap
-        right: window.innerWidth - rect.right
+        bottom: bottom,
+        top: top,
+        left: left,
+        right: undefined
       })
     }
   }, [isOpen])
@@ -96,7 +125,7 @@ function SolveRow({
             </span>
             <span className={`solve-avg ${isPbAo5 ? 'pb-value' : ''}`}>ao5: {formatAverage(ao5)}</span>
             <span className={`solve-avg ${isPbAo12 ? 'pb-value' : ''}`}>ao12: {formatAverage(ao12)}</span>
-            <span className={`solve-avg ${isPbAo100 ? 'pb-value' : ''}`}>ao100: {formatAverage(ao100)}</span>
+            <span className={`solve-avg ao100-display ${isPbAo100 ? 'pb-value' : ''}`}>ao100: {formatAverage(ao100)}</span>
           </div>
         </div>
         <div className="solve-actions">
@@ -128,11 +157,13 @@ function SolveRow({
                 className="solve-menu"
                 style={{
                   position: 'fixed',
-                  bottom: menuPos.bottom,
-                  right: menuPos.right,
-                  top: 'auto',
-                  left: 'auto',
-                  zIndex: 9999
+                  bottom: menuPos.bottom !== undefined ? `${menuPos.bottom}px` : 'auto',
+                  top: menuPos.top !== undefined ? `${menuPos.top}px` : 'auto',
+                  left: menuPos.left !== undefined ? `${menuPos.left}px` : 'auto',
+                  right: menuPos.right || 'auto',
+                  zIndex: 9999,
+                  maxWidth: `min(220px, ${window.innerWidth - 16}px)`,
+                  maxHeight: `${window.innerHeight - 16}px`
                 }}
               >
                 <button
@@ -262,7 +293,11 @@ export default function SessionList() {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      const target = event.target as Node
+      const isInsideContainer = containerRef.current?.contains(target)
+      const isInsideList = listRef.current?.contains(target)
+
+      if (!isInsideContainer && !isInsideList) {
         setIsExpanded(false)
       }
     }
@@ -353,40 +388,43 @@ export default function SessionList() {
         )}
       </div>
 
-      <div
-        ref={listRef}
-        className={`solves-list-container ${isExpanded ? 'expanded' : 'is-collapsed'}`}
-        onClick={handleCollapse}
-        role={'button'}
-        tabIndex={0}
-        onKeyDown={handleKeyDown}
-        aria-label="Collapse session list"
-        aria-expanded={isExpanded}
-      >
-        {hasSolves ? (
-          solvesWithAverages.map((s, idx) => (
-            <SolveRow
-              key={s.id}
-              solve={s}
-              index={idx + 1}
-              onDelete={() => setDeleteId(s.id)}
-              onPenalty={(p) => updateSolvePenalty(s.id, p)}
-              ao5={s.ao5}
-              ao12={s.ao12}
-              ao100={s.ao100}
-              isPbSingle={isBestSingle(s)}
-              isPbAo5={!!bestAo5 && s.ao5 === bestAo5}
-              isPbAo12={!!bestAo12 && s.ao12 === bestAo12}
-              isPbAo100={!!bestAo100 && s.ao100 === bestAo100}
-              rowRef={idx === 0 ? lastItemRef : undefined}
-              isOpen={openScrambleId === s.id}
-              onToggleScramble={() => setOpenScrambleId(prev => prev === s.id ? null : s.id)}
-            />
-          ))
-        ) : (
-          <div className="solve-placeholder">no solves yet</div>
-        )}
-      </div>
+      {createPortal(
+        <div
+          ref={listRef}
+          className={`solves-list-container ${isExpanded ? 'expanded' : 'is-collapsed'}`}
+          onClick={handleCollapse}
+          role={'button'}
+          tabIndex={0}
+          onKeyDown={handleKeyDown}
+          aria-label="Collapse session list"
+          aria-expanded={isExpanded}
+        >
+          {hasSolves ? (
+            solvesWithAverages.map((s, idx) => (
+              <SolveRow
+                key={s.id}
+                solve={s}
+                index={idx + 1}
+                onDelete={() => setDeleteId(s.id)}
+                onPenalty={(p) => updateSolvePenalty(s.id, p)}
+                ao5={s.ao5}
+                ao12={s.ao12}
+                ao100={s.ao100}
+                isPbSingle={isBestSingle(s)}
+                isPbAo5={!!bestAo5 && s.ao5 === bestAo5}
+                isPbAo12={!!bestAo12 && s.ao12 === bestAo12}
+                isPbAo100={!!bestAo100 && s.ao100 === bestAo100}
+                rowRef={idx === 0 ? lastItemRef : undefined}
+                isOpen={openScrambleId === s.id}
+                onToggleScramble={() => setOpenScrambleId(prev => prev === s.id ? null : s.id)}
+              />
+            ))
+          ) : (
+            <div className="solve-placeholder">no solves yet</div>
+          )}
+        </div>,
+        document.body
+      )}
     </div>
   )
 }

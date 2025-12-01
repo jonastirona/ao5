@@ -276,39 +276,51 @@ export default function TourOverlay({ isOpen, onClose }: TourOverlayProps) {
             return
         }
 
+        // Safe zone calculation
+        const safeMargin = 16 // Minimum distance from screen edge
+        const maxX = window.innerWidth - tooltipWidth - safeMargin
+        const maxY = window.innerHeight - tooltipHeight - safeMargin
+
         // Horizontal positioning
         // Start centered on target
         let left = targetRect.left + (targetRect.width / 2) - (tooltipWidth / 2)
-
-        // Clamp to viewport edges
-        const minLeft = padding
-        const maxLeft = window.innerWidth - tooltipWidth - padding
-
-        left = Math.max(minLeft, Math.min(left, maxLeft))
+        // Clamp strictly
+        left = Math.max(safeMargin, Math.min(left, maxX))
 
         // Vertical positioning
         let top = 0
-
-        // Default preference
         const preferTop = currentStep.position === 'top'
 
+        // Check available space
+        const spaceTop = targetRect.top - 10
+        const spaceBottom = window.innerHeight - (targetRect.bottom + 20)
+
         if (preferTop) {
-            // Try top first
-            if (targetRect.top - 10 - tooltipHeight > padding) {
+            if (spaceTop >= tooltipHeight + safeMargin) {
                 top = targetRect.top - 10 - tooltipHeight
-            } else {
-                // Flip to bottom
+            } else if (spaceBottom >= tooltipHeight + safeMargin) {
                 top = targetRect.bottom + 20
+            } else {
+                // If neither fits, pick the larger space
+                top = spaceTop > spaceBottom
+                    ? targetRect.top - 10 - tooltipHeight
+                    : targetRect.bottom + 20
             }
         } else {
-            // Try bottom first
-            if (targetRect.bottom + 20 + tooltipHeight < window.innerHeight - padding) {
+            if (spaceBottom >= tooltipHeight + safeMargin) {
                 top = targetRect.bottom + 20
-            } else {
-                // Flip to top
+            } else if (spaceTop >= tooltipHeight + safeMargin) {
                 top = targetRect.top - 10 - tooltipHeight
+            } else {
+                // If neither fits, pick the larger space
+                top = spaceBottom > spaceTop
+                    ? targetRect.bottom + 20
+                    : targetRect.top - 10 - tooltipHeight
             }
         }
+
+        // Final strict clamp
+        top = Math.max(safeMargin, Math.min(top, maxY))
 
         setTooltipStyle({ top, left })
         setPositionedStep(currentStepIndex)

@@ -274,7 +274,7 @@ export default function Analytics() {
                 </div>
             )}
 
-            <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(6, 1fr)' }}>
+            <div className="stats-grid">
                 {[
                     { label: 'best single', value: stats ? formatTime(stats.best) : '-', highlight: true },
                     { label: 'best ao5', value: stats && stats.bestAo5 ? formatTime(stats.bestAo5) : '-', highlight: true },
@@ -399,7 +399,6 @@ export default function Analytics() {
                                 ]}
                                 layout={{
                                     autosize: true,
-                                    height: 300,
                                     margin: { l: 40, r: 20, t: 20, b: 40 },
                                     paper_bgcolor: 'rgba(0,0,0,0)',
                                     plot_bgcolor: 'rgba(0,0,0,0)',
@@ -457,7 +456,7 @@ export default function Analytics() {
                     </div>
                     <div className="chart-wrapper">
                         {distributionData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height={300}>
+                            <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={distributionData}>
                                     <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
                                     <XAxis dataKey="bin" stroke="var(--text-secondary)" />

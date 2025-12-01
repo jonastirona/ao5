@@ -11,6 +11,7 @@ export default function Account() {
   const navigate = useNavigate()
   const location = useLocation()
   const user = useAuth(s => s.user)
+  const authUsername = useAuth(s => s.username)
   const initializing = useAuth(s => s.initializing)
   const error = useAuth(s => s.error)
   const signIn = useAuth(s => s.signInWithEmailPassword)
@@ -189,7 +190,7 @@ export default function Account() {
                   {user.email?.charAt(0).toUpperCase()}
                 </div>
                 <div className="profile-info">
-                  <h2>{useAuth.getState().username || user.email}</h2>
+                  <h2>{authUsername || user.email}</h2>
                   <p>member since {new Date(user.created_at || Date.now()).toLocaleString('default', { month: 'long', year: 'numeric' }).toLowerCase()}</p>
                 </div>
               </div>

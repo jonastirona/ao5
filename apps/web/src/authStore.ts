@@ -166,9 +166,29 @@ export const useAuth = create<AuthState>((set, get) => ({
     }
     const userId = data.user?.id
     if (userId) {
-      // Upsert profile row for the user
-      await supabase.from('profiles').upsert({ id: userId, username }).select('id').single()
-      set({ username })
+      // Insert profile row for the user (only on signup, never overwrite)
+      // Check if profile already exists first
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id, username')
+        .eq('id', userId)
+        .maybeSingle()
+      
+      if (!existingProfile) {
+        // Only insert if profile doesn't exist
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({ id: userId, username })
+        
+        if (insertError) {
+          set({ error: insertError.message })
+          throw insertError
+        }
+        set({ username })
+      } else {
+        // Profile already exists, use existing username
+        set({ username: existingProfile.username })
+      }
     }
   },
 
@@ -211,7 +231,7 @@ export const useAuth = create<AuthState>((set, get) => ({
     }
     
     // Force clear local state regardless of server response
-    set({ session: null, user: null })
+    set({ session: null, user: null, username: null })
 
     // Clear local solves on logout to avoid cross-account bleed
     try {
@@ -440,48 +460,55 @@ async function ensureProfileAndHydration(userId: string): Promise<void> {
   userSetupPromises.set(userId, (async () => {
     try {
       console.log('[auth] Background setup start for user:', userId)
-      const fallback = `user_${userId.substring(0, 8)}`
-      // Upsert to be idempotent
-      // Check if profile exists first to avoid overwriting with fallback
-      let { data: profile } = await supabase
+      
+      // Always fetch the existing profile - never create or overwrite
+      let { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('theme, username')
         .eq('id', userId)
         .maybeSingle()
 
-        if (!profile) {
-          console.log('[auth] No profile found via SELECT. Attempting to create default...')
-          
-          const { error: insertError } = await supabase
-            .from('profiles')
-            .insert({ id: userId, username: fallback })
-          
-          if (insertError) {
-              console.warn('[auth] Profile creation failed (likely exists):', insertError)
-              
-              // If failed, try fetching again
-              const { data: retryProfile, error: retryError } = await supabase
-                .from('profiles')
-                .select('theme, username')
-                .eq('id', userId)
-                .maybeSingle()
-              
-              if (retryProfile) {
-                  console.log('[auth] Recovered profile on retry:', retryProfile)
-                  profile = retryProfile
-              } else {
-                  console.error('[auth] Failed to recover profile on retry. Error:', retryError)
-              }
-          } else {
-              console.log('[auth] Created new default profile')
-              profile = { username: fallback, theme: null }
-          }
-      } else {
-          console.log('[auth] Profile found:', profile)
+      if (profileError) {
+        console.error('[auth] Error fetching profile:', profileError)
       }
 
-      if (profile) {
-          useAuth.setState({ username: profile.username })
+      if (!profile) {
+        console.log('[auth] No profile found. Attempting to create default (only if truly missing)...')
+        
+        // Only create if profile truly doesn't exist - use INSERT with ON CONFLICT handling
+        const fallback = `user_${userId.substring(0, 8)}`
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({ id: userId, username: fallback })
+        
+        if (insertError) {
+          // If insert failed (likely profile exists), try fetching again
+          console.warn('[auth] Profile creation failed (likely exists):', insertError)
+          
+          const { data: retryProfile, error: retryError } = await supabase
+            .from('profiles')
+            .select('theme, username')
+            .eq('id', userId)
+            .maybeSingle()
+          
+          if (retryProfile) {
+            console.log('[auth] Recovered profile on retry:', retryProfile)
+            profile = retryProfile
+          } else {
+            console.error('[auth] Failed to recover profile on retry. Error:', retryError)
+          }
+        } else {
+          // Successfully created new profile with fallback
+          console.log('[auth] Created new default profile with fallback username')
+          profile = { username: fallback, theme: null }
+        }
+      } else {
+        console.log('[auth] Profile found with username:', profile.username)
+      }
+
+      // Always use the profile's username from database - never overwrite with fallback
+      if (profile && profile.username) {
+        useAuth.setState({ username: profile.username })
       }
 
       // Auto-sync local work before hydrating
@@ -491,21 +518,27 @@ async function ensureProfileAndHydration(userId: string): Promise<void> {
           // Check if we have any local solves that are NOT synced (which is all of them for a guest)
           // Actually, for a guest, 'synced' is false or undefined.
           // But we should check if there are ANY solves.
-          if (localSolves.length > 0) {
-              console.log('[auth] Found local solves, checking for merge candidates...')
+          // Filter to only truly local (unsynced) solves
+          const unsyncedSolves = localSolves.filter(s => !s.synced)
+          
+          if (unsyncedSolves.length > 0) {
+              console.log('[auth] Found unsynced local solves:', unsyncedSolves.length)
               const cloudSessions = await import('./cloudSync').then(m => m.fetchCloudSessions())
               
               if (cloudSessions && cloudSessions.length > 0) {
-                  // Find the current local session to determine puzzle type
+                  // Find the current local session
                   const currentLocalId = useStore.getState().currentSessionId
                   const currentLocalSession = useStore.getState().sessions.find(s => s.id === currentLocalId)
                   
-                  if (currentLocalSession && currentLocalSession.solves.length > 0) {
+                  // Check if the current session specifically has unsynced solves
+                  const currentSessionHasUnsynced = currentLocalSession?.solves.some(s => !s.synced)
+                  
+                  if (currentLocalSession && currentSessionHasUnsynced) {
                       // Filter cloud sessions by same puzzle type
                       const candidates = cloudSessions.filter(s => s.puzzleType === currentLocalSession.puzzleType)
                       
                       if (candidates.length > 0) {
-                          console.log('[auth] Found merge candidates, prompting user')
+                          console.log('[auth] Found merge candidates for current session, prompting user')
                           useAuth.getState().setMergePrompt({
                               isOpen: true,
                               localSessionId: currentLocalId,
@@ -515,6 +548,8 @@ async function ensureProfileAndHydration(userId: string): Promise<void> {
                       }
                   }
               }
+          } else {
+             console.log('[auth] No unsynced local solves to merge')
           }
           
           // If no local solves OR no candidates, just auto-sync (create new)
@@ -535,19 +570,23 @@ async function ensureProfileAndHydration(userId: string): Promise<void> {
 // Set up auth state listener after store creation
 supabase.auth.onAuthStateChange(async (event, session) => {
   console.log('[auth] Auth state change:', event, session ? 'authenticated' : 'not authenticated')
+  
+  // Only clear username on explicit sign out, not on other state changes
+  if (event === 'SIGNED_OUT') {
+    useAuth.setState({ session: null, user: null, username: null })
+    console.log('[auth] Signed out detected, clearing local solves')
+    try { useStore.getState().clearSolves() } catch { /* Ignore */ }
+    return
+  }
+  
+  // Update session and user, but preserve username until we fetch it from profile
   useAuth.setState({ session: session ?? null, user: session?.user ?? null })
 
   if (session?.user) {
     // On any signed-in state (including INITIAL_SESSION with user), schedule setup
+    // This will fetch and set the username from the profile
     console.log('[auth] Auth change: scheduling background setup')
     queueMicrotask(() => { void ensureProfileAndHydration(session.user!.id) })
-    return
-  }
-
-  // If the event explicitly indicates a sign-out, clear local solves.
-  if (event === 'SIGNED_OUT') {
-    console.log('[auth] Signed out detected, clearing local solves')
-    try { useStore.getState().clearSolves() } catch { /* Ignore */ }
   } else {
     console.log('[auth] No user present; not clearing local solves unless SIGNED_OUT')
   }

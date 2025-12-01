@@ -40,8 +40,19 @@ Deno.serve(async (req: Request) => {
     if (userError || !user) return new Response('Unauthorized', { status: 401 })
 
     // Ensure a profile row exists (profiles.username is required + unique)
-    const fallback = `user_${user.id.substring(0, 8)}`
-    await admin.from('profiles').upsert({ id: user.id, username: fallback })
+    // Only create if it doesn't exist - never overwrite existing username
+    const { data: existingProfile } = await admin
+      .from('profiles')
+      .select('id, username')
+      .eq('id', user.id)
+      .maybeSingle()
+    
+    if (!existingProfile) {
+      // Only create profile if it doesn't exist
+      const fallback = `user_${user.id.substring(0, 8)}`
+      await admin.from('profiles').insert({ id: user.id, username: fallback })
+    }
+    // If profile exists, do nothing - never overwrite the username
 
     let sessionId = session_id as string | undefined
     if (!sessionId) {

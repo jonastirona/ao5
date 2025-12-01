@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useStore } from '../store'
 
 function formatMs(ms: number): string {
@@ -20,6 +20,11 @@ export default function TimerDisplay() {
   const isTimerRunning = useStore(s => s.isTimerRunning)
   const init = useStore(s => s.init)
   const startListening = useStore(s => s.startListening)
+  const timer = useStore(s => s.timer)
+  const settings = useStore(s => s.settings)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const touchStartTimeRef = useRef<number | null>(null)
+  const touchActiveRef = useRef<boolean>(false)
 
   useEffect(() => {
     (async () => {
@@ -31,6 +36,77 @@ export default function TimerDisplay() {
       if (window.__ao5_cleanup) window.__ao5_cleanup()
     }
   }, [init, startListening])
+
+  // Touch event handlers for mobile
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container || !timer) return
+
+    const handleTouchStart = (e: TouchEvent) => {
+      // Prevent default to avoid scrolling
+      e.preventDefault()
+      touchStartTimeRef.current = Date.now()
+      touchActiveRef.current = true
+
+      // Get current state
+      const state = useStore.getState()
+      
+      // Set isKeyHeld state (similar to keyboard)
+      useStore.setState({ isKeyHeld: true })
+      
+      // Handle timer state transitions (similar to Space key)
+      if (state.timerState === 'timing') {
+        timer.handleKeyDown('Space', { repeat: false })
+        return
+      }
+
+      if (state.timerState === 'idle') {
+        if (state.settings.inspectionEnabled) {
+          timer.startInspection()
+        } else {
+          timer.handleKeyDown('Space', { repeat: false })
+        }
+      } else if (state.timerState === 'inspection') {
+        timer.handleKeyDown('Space', { repeat: false })
+      } else {
+        timer.handleKeyDown('Space', { repeat: false })
+      }
+    }
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      e.preventDefault()
+      touchActiveRef.current = false
+      
+      // Only handle key up if we actually started a touch
+      if (touchStartTimeRef.current !== null) {
+        timer.handleKeyUp('Space')
+        useStore.setState({ isKeyHeld: false })
+        touchStartTimeRef.current = null
+      }
+    }
+
+    const handleTouchCancel = (e: TouchEvent) => {
+      e.preventDefault()
+      touchActiveRef.current = false
+      
+      if (touchStartTimeRef.current !== null) {
+        timer.handleKeyUp('Space')
+        useStore.setState({ isKeyHeld: false })
+        touchStartTimeRef.current = null
+      }
+    }
+
+    // Add touch event listeners
+    container.addEventListener('touchstart', handleTouchStart, { passive: false })
+    container.addEventListener('touchend', handleTouchEnd, { passive: false })
+    container.addEventListener('touchcancel', handleTouchCancel, { passive: false })
+
+    return () => {
+      container.removeEventListener('touchstart', handleTouchStart)
+      container.removeEventListener('touchend', handleTouchEnd)
+      container.removeEventListener('touchcancel', handleTouchCancel)
+    }
+  }, [timer])
 
   // Timer should be focused when key is held OR when timer is running OR during inspection
   const shouldFocus = isKeyHeld || isTimerRunning || timerState === 'inspection'
@@ -51,7 +127,11 @@ export default function TimerDisplay() {
   }
 
   return (
-    <div className={`timer-container ${shouldFocus ? 'focused' : ''}`}>
+    <div 
+      ref={containerRef}
+      className={`timer-container ${shouldFocus ? 'focused' : ''}`}
+      style={{ touchAction: 'none', userSelect: 'none' }}
+    >
       <div className={`timer-display ${stateClass} ${shouldFocus ? 'focused' : ''}`}>
         {displayValue}
       </div>
