@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
 
 function formatMs(ms: number): string {
@@ -60,11 +60,8 @@ export default function TimerDisplay() {
       }
 
       if (state.timerState === 'idle') {
-        if (state.settings.inspectionEnabled) {
-          timer.startInspection()
-        } else {
-          timer.handleKeyDown('Space', { repeat: false })
-        }
+        // Always go to ready (timer handles inspection logic)
+        timer.handleKeyDown('Space', { repeat: false })
       } else if (state.timerState === 'inspection') {
         timer.handleKeyDown('Space', { repeat: false })
       } else {
@@ -107,11 +104,31 @@ export default function TimerDisplay() {
     }
   }, [timer])
 
+  const [isReadyVisual, setIsReadyVisual] = useState(false)
+  const holdTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (timerState === 'ready' && isKeyHeld) {
+      const isTouch = typeof window !== 'undefined' && (('ontouchstart' in window) || navigator.maxTouchPoints > 0)
+      const duration = isTouch ? 500 : 300
+
+      holdTimeoutRef.current = setTimeout(() => {
+        setIsReadyVisual(true)
+      }, duration)
+    } else {
+      if (holdTimeoutRef.current) clearTimeout(holdTimeoutRef.current)
+      setIsReadyVisual(false)
+    }
+    return () => {
+      if (holdTimeoutRef.current) clearTimeout(holdTimeoutRef.current)
+    }
+  }, [timerState, isKeyHeld])
+
   // Timer should be focused when key is held OR when timer is running OR during inspection
   const shouldFocus = isKeyHeld || isTimerRunning || timerState === 'inspection'
 
   let displayValue = formatMs(elapsedMs)
-  let stateClass = timerState
+  let stateClass: string = timerState
 
   if (timerState === 'inspection') {
     displayValue = inspectionLeft !== null ? String(inspectionLeft) : '15'
@@ -119,7 +136,7 @@ export default function TimerDisplay() {
       stateClass += ' inspection-warning'
     }
   } else if (timerState === 'ready') {
-    stateClass = 'ready'
+    stateClass = isReadyVisual ? 'ready-green' : 'ready-red'
     displayValue = formatMs(0)
   } else if (timerState === 'idle') {
     displayValue = formatMs(elapsedMs)
@@ -135,19 +152,20 @@ export default function TimerDisplay() {
         {displayValue}
       </div>
 
-      <button
-        className="timer-abort-btn"
-        onClick={(e) => {
-          e.stopPropagation()
-          timer?.reset()
-          useStore.setState({ isKeyHeld: false })
-        }}
-        aria-label="Abort timer"
-      >
-        ✕
-      </button>
+      {(timerState === 'timing' || timerState === 'inspection') && (
+        <button
+          className="timer-abort-btn"
+          onClick={(e) => {
+            e.stopPropagation()
+            e.preventDefault() // Prevent ghost clicks
+            timer?.reset()
+            useStore.setState({ isKeyHeld: false })
+          }}
+          aria-label="Abort timer"
+        >
+          ✕
+        </button>
+      )}
     </div>
   )
 }
-
-

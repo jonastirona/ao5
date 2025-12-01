@@ -409,7 +409,7 @@ export const useStore = create<StoreState>((set, get) => ({
     
     // Detect mobile/touch to increase hold time
     const isTouch = typeof window !== 'undefined' && (('ontouchstart' in window) || navigator.maxTouchPoints > 0)
-    const holdDurationMs = isTouch ? 550 : 300
+    const holdDurationMs = isTouch ? 500 : 300
     
     timer.updateSettings({ 
         inspectionDurationMs: settings.inspectionDuration,

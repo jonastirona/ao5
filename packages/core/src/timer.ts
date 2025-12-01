@@ -66,8 +66,8 @@ export class TimerStateMachine {
     const holdTime = Date.now() - this.keyDownTime;
     
     if (this.state === "ready") {
-        // If coming from inspection, allow instant start (ignore minHoldTime)
-        if (this.inspectionStartTime || holdTime >= this.minHoldTime) {
+        // Require hold time to be met for both inspection start and solve start
+        if (holdTime >= this.minHoldTime) {
             if (this.inspectionEnabled && !this.inspectionStartTime) {
                 this.startInspection();
             } else {
@@ -76,6 +76,7 @@ export class TimerStateMachine {
         } else {
             // If released too early, go back to previous state
             if (this.inspectionStartTime) {
+                // Ensure we don't restart inspection, just return to state
                 this.transition("inspection");
             } else {
                 this.transition("idle");
@@ -85,7 +86,7 @@ export class TimerStateMachine {
   }
 
   public startInspection(): void {
-    if (this.state !== "idle" && this.state !== "stopped") return;
+    if (this.state !== "idle" && this.state !== "stopped" && this.state !== "ready") return;
     this.inspectionStartTime = Date.now();
     this.penalty = null;
     this.transition("inspection");

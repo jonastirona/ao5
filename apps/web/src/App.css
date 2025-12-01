@@ -547,26 +547,27 @@ body {
 
 .timer-abort-btn {
   display: none;
-  position: absolute;
-  top: -40px;
-  right: 0;
+  position: fixed;
+  top: 20px;
+  right: 20px;
   background: rgba(255, 255, 255, 0.1);
   border: none;
   color: var(--text-secondary);
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  font-size: 18px;
+  font-size: 24px;
   cursor: pointer;
-  z-index: 20;
+  z-index: 9999;
   touch-action: manipulation;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
 }
 
 @media (max-width: 768px) {
   .timer-abort-btn {
     display: flex;
-    align-items: center;
-    justify-content: center;
   }
 }
 
@@ -589,19 +590,26 @@ body {
 }
 
 .timer-display.ready {
-  color: #FFB700;
-  /* Golden yellow for ready state */
+  color: var(--error);
+}
+
+.timer-display.ready-red {
+  color: var(--error);
+}
+
+.timer-display.ready-green {
+  color: var(--accent);
 }
 
 .timer-display.timing {
-  color: #FF6B6B;
-  /* Red for timing state */
+  color: var(--error);
 }
 
 .timer-display.stopped {
-  color: #4ECDC4;
-  /* Teal for stopped state */
+  color: var(--text-primary);
 }
+
+
 
 .timer-container::after {
   content: "hold any key to start timer";
@@ -787,10 +795,16 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--space-2);
+  padding: 8px 12px;
+  width: 100%;
+  box-sizing: border-box;
   transition: background-color 0.2s ease;
 }
 
+/* Ensure consistent alignment in collapsed state */
+.session-collapsed .solve-item {
+  padding: 8px 12px;
+}
 
 
 /* Intentionally no hover color change to preserve theme */
