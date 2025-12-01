@@ -449,24 +449,39 @@ async function ensureProfileAndHydration(userId: string): Promise<void> {
         .eq('id', userId)
         .maybeSingle()
 
-      if (!profile) {
-          console.log('[auth] No profile found, creating default')
+        if (!profile) {
+          console.log('[auth] No profile found via SELECT. Attempting to create default...')
+          
           const { error: insertError } = await supabase
             .from('profiles')
             .insert({ id: userId, username: fallback })
           
           if (insertError) {
-              console.warn('[auth] Profile creation failed:', insertError)
+              console.warn('[auth] Profile creation failed (likely exists):', insertError)
+              
+              // If failed, try fetching again
+              const { data: retryProfile, error: retryError } = await supabase
+                .from('profiles')
+                .select('theme, username')
+                .eq('id', userId)
+                .maybeSingle()
+              
+              if (retryProfile) {
+                  console.log('[auth] Recovered profile on retry:', retryProfile)
+                  profile = retryProfile
+              } else {
+                  console.error('[auth] Failed to recover profile on retry. Error:', retryError)
+              }
           } else {
+              console.log('[auth] Created new default profile')
               profile = { username: fallback, theme: null }
           }
+      } else {
+          console.log('[auth] Profile found:', profile)
       }
 
       if (profile) {
           useAuth.setState({ username: profile.username })
-          if (profile.theme) {
-              useStore.getState().setTheme(profile.theme)
-          }
       }
 
       // Auto-sync local work before hydrating
