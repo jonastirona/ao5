@@ -1,4 +1,4 @@
-/// <reference types="vitest" />
+import { fileURLToPath } from 'url'
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -37,7 +37,7 @@ export default defineConfig({
         ]
       },
       workbox: {
-        maximumFileSizeToCacheInBytes: 6000000
+        maximumFileSizeToCacheInBytes: 8000000
       }
     })
   ],
@@ -45,7 +45,7 @@ export default defineConfig({
     format: 'es'
   },
   optimizeDeps: {
-    exclude: ['cubing']
+    exclude: ['cubing', 'core']
   },
   test: {
     environment: 'jsdom',
@@ -54,7 +54,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      core: '../../packages/core/src/index.ts'
+      core: fileURLToPath(new URL('../../packages/core/src/index.ts', import.meta.url))
     }
   }
 })

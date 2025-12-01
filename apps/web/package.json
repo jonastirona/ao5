@@ -10,10 +10,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@sentry/react": "^10.27.0",
     "@supabase/supabase-js": "^2.57.0",
     "core": "workspace:*",
     "cubing": "^0.58.2",
     "plotly.js-dist-min": "^3.3.0",
+    "posthog-js": "^1.298.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-plotly.js": "^2.6.0",
