@@ -95,17 +95,7 @@ export default function Support() {
                 {activeTab === 'ads' && (
                     <div className="support-section">
                         <h3>ads</h3>
-                        <p className="subtitle">check out these offers to support us for free.</p>
-
-                        <div className="ad-container">
-                            {/* Google Ads Placeholder */}
-                            <div className="ad-placeholder">
-                                <span className="ad-label">advertisement</span>
-                                <div className="ad-content">
-                                    Support us by disabling your ad blocker for this site.
-                                </div>
-                            </div>
-                        </div>
+                        <p className="subtitle">coming soon - we need to pay the bills</p>
                     </div>
                 )}
 
