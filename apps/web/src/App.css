@@ -32,17 +32,17 @@ body {
   line-height: 1.5;
   color: var(--text-primary);
   background: var(--bg);
-  overflow: hidden;
+  overflow-x: hidden;
+  min-height: 100dvh;
 }
 
 #root {
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100dvh;
 }
 
 .layout {
   color: var(--text-primary);
-  height: 100vh;
+  min-height: 100dvh;
   display: grid;
   grid-template-rows: auto auto 1fr auto;
   grid-template-areas:
@@ -53,6 +53,8 @@ body {
   padding: var(--space-2);
   box-sizing: border-box;
   animation: fadeIn 0.3s ease-out;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 @keyframes fadeIn {
@@ -359,6 +361,10 @@ body {
   border-radius: 999px;
   padding: 6px 12px;
   width: fit-content;
+  max-width: 100%;
+  flex-wrap: wrap;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
 .scramble-nav-btn {
@@ -385,6 +391,7 @@ body {
   font-size: 18px;
   font-weight: 500;
   color: var(--text-primary);
+  word-break: break-word;
 }
 
 /* Timer Display */
@@ -481,7 +488,8 @@ body {
 
 /* Session List */
 .session-container {
-  width: 560px;
+  width: 100%;
+  max-width: 560px;
   position: relative;
   height: 44px;
   /* Align with stats height; prevent layout shift */
@@ -491,7 +499,8 @@ body {
 }
 
 .solves-list-container {
-  width: 560px;
+  width: 100%;
+  max-width: 560px;
 }
 
 /* Collapsed card showing only the latest solve (no scroll) */
@@ -771,13 +780,27 @@ body {
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
+  :root {
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 16px;
+    --space-4: 24px;
+    --space-5: 32px;
+    --space-6: 48px;
+  }
+
+  body {
+    font-size: 14px;
+  }
+
   .timer-display {
-    font-size: 60px;
+    font-size: 15vw;
+    /* Responsive font size */
   }
 
   .scramble-text {
     font-size: 16px;
-    min-width: 150px;
+    /* Removed min-width to prevent overflow */
   }
 
 
@@ -785,6 +808,208 @@ body {
   .footer {
     flex-direction: column;
     gap: var(--space-2);
+  }
+
+  .header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 0;
+  }
+
+  .header-left,
+  .header-right {
+    display: contents;
+  }
+
+  .logo-link {
+    order: 1;
+    margin-right: auto;
+  }
+
+  .header-link {
+    order: 2;
+  }
+
+  .header-control {
+    order: 3;
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  .session-selector {
+    width: 100%;
+  }
+
+  .session-trigger {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .logo {
+    font-size: 20px;
+  }
+
+  .icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .header-link {
+    padding: 6px;
+    min-width: 32px;
+    height: 32px;
+  }
+
+  .scramble-text {
+    font-size: 14px;
+    line-height: 1.4;
+    padding: 0 8px;
+  }
+
+  .scramble-nav-btn {
+    padding: 4px;
+    font-size: 18px;
+  }
+
+  .session-header {
+    height: 36px;
+    padding: 0 10px;
+  }
+
+  .session-collapsed {
+    height: 36px;
+  }
+
+  .latest-solve {
+    font-size: 14px;
+  }
+
+  .session-title {
+    font-size: 14px;
+  }
+
+  .solve-item {
+    padding: 8px;
+    height: 40px;
+  }
+
+  .solve-time {
+    font-size: 16px;
+  }
+
+  .solve-index {
+    font-size: 12px;
+  }
+
+  /* Tour Overlay Mobile Adjustments */
+  .tour-tooltip {
+    max-width: 90vw !important;
+    padding: 16px !important;
+  }
+
+  .tour-tooltip h3 {
+    font-size: 16px !important;
+  }
+
+  .tour-tooltip p {
+    font-size: 13px !important;
+  }
+
+  .main {
+    padding-bottom: 10vh;
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  .scramble-visualization {
+    width: 100%;
+    height: 150px;
+    /* Default height */
+    transform: scale(0.6) !important;
+    transform-origin: center top !important;
+    margin-top: -20px;
+  }
+}
+
+@media (max-width: 900px) and (orientation: landscape) {
+  .layout {
+    grid-template-rows: auto 1fr auto;
+    grid-template-areas:
+      "header"
+      "main"
+      "footer";
+    padding: var(--space-1);
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .header {
+    padding: 4px 0;
+  }
+
+  .logo {
+    font-size: 20px;
+  }
+
+  .header-link {
+    padding: 4px;
+    min-width: 32px;
+    height: 32px;
+  }
+
+  .main {
+    flex-direction: row;
+    padding-bottom: 0;
+    gap: var(--space-3);
+    align-items: center;
+  }
+
+  .scramble-layer {
+    position: absolute;
+    top: 50px;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  .scramble-container {
+    pointer-events: auto;
+    background: rgba(1, 21, 2, 0.8);
+    backdrop-filter: blur(4px);
+    padding: 4px 12px;
+  }
+
+  .scramble-text {
+    font-size: 14px;
+  }
+
+  .timer-display {
+    font-size: 120px;
+    /* Larger timer for landscape */
+  }
+
+  .footer {
+    padding: 4px;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: transparent;
+    pointer-events: none;
+  }
+
+  .session-container {
+    pointer-events: auto;
+    transform: scale(0.8);
+    transform-origin: bottom center;
+    margin-bottom: 4px;
+  }
+
+  /* Hide visualization in landscape to save space, or make it very small */
+  .scramble-visualization {
+    display: none !important;
   }
 }
 

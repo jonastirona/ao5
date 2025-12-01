@@ -86,8 +86,6 @@ export default function ScrambleDisplay() {
         ref={containerRef}
         className="scramble-visualization"
         style={{
-          width: '200px',
-          height: '150px',
           opacity: settings.showScrambleImage ? 0.8 : 0,
           transition: 'opacity 0.2s, transform 0.2s',
           visibility: settings.showScrambleImage ? 'visible' : 'hidden',

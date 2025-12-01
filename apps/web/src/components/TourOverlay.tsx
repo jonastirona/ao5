@@ -135,7 +135,7 @@ export default function TourOverlay({ isOpen, onClose }: TourOverlayProps) {
             // But we want the spotlight to match the VISUAL card size.
             // The card is 320px wide + padding.
             // ADJUST WELCOME SPOTLIGHT WIDTH HERE
-            const width = 320 // User preference
+            const width = Math.min(320, window.innerWidth - 32) // Responsive width
             const height = step.target === 'shortcuts-info' ? 345 : 170 // Approximate height
             return {
                 top: window.innerHeight / 2 - height / 2,
