@@ -173,6 +173,58 @@ body {
   transform: scale(1.1) !important;
 }
 
+.help-tooltip {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 12px;
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 8px 12px;
+  box-shadow: var(--shadow);
+  z-index: 1000;
+  white-space: nowrap;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.help-tooltip-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.help-tooltip-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+
+.help-tooltip-close:hover {
+  color: var(--text-primary);
+}
+
+.help-tooltip-arrow {
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 8px;
+  height: 8px;
+  background: var(--bg);
+  border-left: 1px solid var(--accent);
+  border-top: 1px solid var(--accent);
+}
+
 /* Cards */
 .card {
   background: var(--bg);
@@ -749,7 +801,7 @@ body {
 }
 
 /* Add extra space between ao5 and ao12 - dynamic spacing */
-.solve-inline > .solve-time + .solve-avg + .solve-avg {
+.solve-inline>.solve-time+.solve-avg+.solve-avg {
   margin-left: clamp(8px, min(1.5vw, 1.5vh), 24px);
 }
 
@@ -1182,12 +1234,12 @@ body {
   .solve-avg {
     font-size: clamp(8px, min(2vw, 2vh), 12px);
   }
-  
+
   .solve-inline {
     gap: clamp(3px, min(1.5vw, 1.5vh), 12px);
   }
-  
-  .solve-inline > .solve-time + .solve-avg + .solve-avg {
+
+  .solve-inline>.solve-time+.solve-avg+.solve-avg {
     margin-left: clamp(6px, min(1.5vw, 1.5vh), 20px);
   }
 
@@ -1597,7 +1649,7 @@ body {
 }
 
 /* Add extra space between ao5 and ao12 in grid layout - dynamic */
-.solve-inline > .solve-time + .solve-avg {
+.solve-inline>.solve-time+.solve-avg {
   margin-right: clamp(12px, min(2vw, 2vh), 32px);
 }
 
@@ -1606,8 +1658,8 @@ body {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1.2fr) minmax(0, 1.3fr);
     column-gap: clamp(4px, min(1.5vw, 1.5vh), 12px);
   }
-  
-  .solve-inline > .solve-time + .solve-avg {
+
+  .solve-inline>.solve-time+.solve-avg {
     margin-right: clamp(8px, min(1.5vw, 1.5vh), 24px);
   }
 }

@@ -21,7 +21,6 @@ export default function TimerDisplay() {
   const init = useStore(s => s.init)
   const startListening = useStore(s => s.startListening)
   const timer = useStore(s => s.timer)
-  const settings = useStore(s => s.settings)
   const containerRef = useRef<HTMLDivElement>(null)
   const touchStartTimeRef = useRef<number | null>(null)
   const touchActiveRef = useRef<boolean>(false)
@@ -50,10 +49,10 @@ export default function TimerDisplay() {
 
       // Get current state
       const state = useStore.getState()
-      
+
       // Set isKeyHeld state (similar to keyboard)
       useStore.setState({ isKeyHeld: true })
-      
+
       // Handle timer state transitions (similar to Space key)
       if (state.timerState === 'timing') {
         timer.handleKeyDown('Space', { repeat: false })
@@ -76,7 +75,7 @@ export default function TimerDisplay() {
     const handleTouchEnd = (e: TouchEvent) => {
       e.preventDefault()
       touchActiveRef.current = false
-      
+
       // Only handle key up if we actually started a touch
       if (touchStartTimeRef.current !== null) {
         timer.handleKeyUp('Space')
@@ -88,7 +87,7 @@ export default function TimerDisplay() {
     const handleTouchCancel = (e: TouchEvent) => {
       e.preventDefault()
       touchActiveRef.current = false
-      
+
       if (touchStartTimeRef.current !== null) {
         timer.handleKeyUp('Space')
         useStore.setState({ isKeyHeld: false })
@@ -127,7 +126,7 @@ export default function TimerDisplay() {
   }
 
   return (
-    <div 
+    <div
       ref={containerRef}
       className={`timer-container ${shouldFocus ? 'focused' : ''}`}
       style={{ touchAction: 'none', userSelect: 'none' }}

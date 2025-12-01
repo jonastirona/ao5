@@ -265,7 +265,6 @@ export default function TourOverlay({ isOpen, onClose }: TourOverlayProps) {
 
         const tooltip = tooltipRef.current
         const { width: tooltipWidth, height: tooltipHeight } = tooltip.getBoundingClientRect()
-        const padding = 20
 
         if (currentStep.position === 'center') {
             setTooltipStyle({

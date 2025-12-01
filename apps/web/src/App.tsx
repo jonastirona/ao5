@@ -24,6 +24,7 @@ import NetworkStatus from './components/NetworkStatus'
 import GuestBanner from './components/GuestBanner'
 import LoginPromptModal from './components/LoginPromptModal'
 import MergeSessionModal from './components/MergeSessionModal'
+import HelpTooltip from './components/HelpTooltip'
 
 function AppContent() {
   // Initialize auth/session on app start
@@ -36,16 +37,25 @@ function AppContent() {
   const timerState = useStore(s => s.timerState)
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false)
   const [pendingOnboarding, setPendingOnboarding] = useState(false)
+  const [showHelpTooltip, setShowHelpTooltip] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
 
+  const authInitializing = useAuth(s => s.initializing)
+  const user = useAuth(s => s.user)
+
   useEffect(() => {
+    if (authInitializing) return
+
     const hasSeenOnboarding = localStorage.getItem('ao5.hasSeenOnboarding')
     if (!hasSeenOnboarding) {
-      setIsOnboardingOpen(true)
+      if (!user) {
+        // Instead of auto-starting, show the tooltip
+        setShowHelpTooltip(true)
+      }
       localStorage.setItem('ao5.hasSeenOnboarding', 'true')
     }
-  }, [])
+  }, [authInitializing, user])
 
   useEffect(() => {
     if (pendingOnboarding && location.pathname === '/') {
@@ -67,6 +77,7 @@ function AppContent() {
   }, [navigate])
 
   const handleStartTour = () => {
+    setShowHelpTooltip(false) // Close tooltip if they click help
     if (location.pathname !== '/') {
       setPendingOnboarding(true)
       navigate('/')
@@ -111,17 +122,20 @@ function AppContent() {
             <div className={`header-control ${shouldHide ? 'hidden' : ''}`}>
               <SessionManager />
             </div>
-            <button
-              className={`header-link ${shouldHide ? 'hidden' : ''}`}
-              onClick={handleStartTour}
-              aria-label="Help"
-              data-tour="help-button"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', marginRight: '0.5rem' }}
-            >
-              <svg className="icon" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z" />
-              </svg>
-            </button>
+            <div style={{ position: 'relative', marginRight: '0.5rem' }} className={shouldHide ? 'hidden' : ''}>
+              <button
+                className="header-link"
+                onClick={handleStartTour}
+                aria-label="Help"
+                data-tour="help-button"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', padding: 0 }}
+              >
+                <svg className="icon" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z" />
+                </svg>
+              </button>
+              {showHelpTooltip && <HelpTooltip onClose={() => setShowHelpTooltip(false)} />}
+            </div>
             <Link className={`header-link ${shouldHide ? 'hidden' : ''}`} to="/stats" aria-label="Stats" data-tour="stats-link">
               <svg className="icon" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M3 3v18h18M9 9l3 3 3-3M9 15l3 3 3-3" />
@@ -197,5 +211,3 @@ export default function App() {
     </BrowserRouter>
   )
 }
-
-
