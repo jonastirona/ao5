@@ -31,7 +31,7 @@ interface AuthState {
   mergePrompt: { isOpen: boolean, localSessionId: string, cloudSessions: { id: string, name: string, puzzleType: string }[] } | null
 
   setMergePrompt: (prompt: AuthState['mergePrompt']) => void
-  resolveMerge: (targetSessionId: string | null) => Promise<void>
+  resolveMerge: (action: 'merge' | 'create' | 'discard', targetSessionId?: string) => Promise<void>
 
   setShowLoginPrompt: (show: boolean) => void
   init: () => Promise<void>
@@ -65,14 +65,21 @@ export const useAuth = create<AuthState>((set, get) => ({
 
   setMergePrompt: (prompt) => set({ mergePrompt: prompt }),
 
-  resolveMerge: async (targetSessionId) => {
+  resolveMerge: async (action, targetSessionId) => {
       const prompt = get().mergePrompt
       if (!prompt) return
       
       set({ mergePrompt: null }) // Close prompt
 
       try {
-          if (targetSessionId) {
+          if (action === 'discard') {
+              console.log('[auth] Discarding local solves')
+              useStore.getState().clearSolves()
+              await get().hydrateFromCloud()
+              return
+          }
+
+          if (action === 'merge' && targetSessionId) {
               console.log('[auth] Merging local session', prompt.localSessionId, 'into', targetSessionId)
               
               // Find target session details
