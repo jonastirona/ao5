@@ -23,6 +23,7 @@ import GlobalShortcuts from './components/GlobalShortcuts'
 import NetworkStatus from './components/NetworkStatus'
 import GuestBanner from './components/GuestBanner'
 import LoginPromptModal from './components/LoginPromptModal'
+import MergeSessionModal from './components/MergeSessionModal'
 
 function AppContent() {
   // Initialize auth/session on app start
@@ -99,6 +100,7 @@ function AppContent() {
       <NetworkStatus />
       <GuestBanner />
       <LoginPromptModal />
+      <MergeSessionModal />
       <div className="layout">
 
         <header className="header">

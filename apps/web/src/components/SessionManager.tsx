@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useStore } from '../store'
 import { SUPPORTED_EVENTS, type PuzzleType } from 'core'
+import ConfirmationModal from './ConfirmationModal'
 
 export default function SessionManager() {
     const sessions = useStore(s => s.sessions)
@@ -17,6 +18,10 @@ export default function SessionManager() {
     const [newName, setNewName] = useState('')
     const [newType, setNewType] = useState<PuzzleType>('3x3')
     const [renameValue, setRenameValue] = useState('')
+    const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean, sessionId: string | null }>({
+        isOpen: false,
+        sessionId: null
+    })
 
     const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -66,10 +71,15 @@ export default function SessionManager() {
         setIsDropdownOpen(false)
     }
 
-    const handleDelete = (e: React.MouseEvent, id: string) => {
+    const handleDeleteClick = (e: React.MouseEvent, id: string) => {
         e.stopPropagation()
-        if (confirm('are you sure you want to delete this session?')) {
-            deleteSession(id)
+        setDeleteConfirmation({ isOpen: true, sessionId: id })
+    }
+
+    const confirmDelete = () => {
+        if (deleteConfirmation.sessionId) {
+            deleteSession(deleteConfirmation.sessionId)
+            setDeleteConfirmation({ isOpen: false, sessionId: null })
         }
     }
 
@@ -117,7 +127,7 @@ export default function SessionManager() {
                                     </button>
                                     <button
                                         className="action-btn danger"
-                                        onClick={(e) => handleDelete(e, s.id)}
+                                        onClick={(e) => handleDeleteClick(e, s.id)}
                                         title="Delete"
                                         disabled={sessions.length <= 1}
                                     >
@@ -220,6 +230,16 @@ export default function SessionManager() {
                     document.body
                 )
             }
+
+            <ConfirmationModal
+                isOpen={deleteConfirmation.isOpen}
+                title="delete session?"
+                message="are you sure you want to delete this session? this action cannot be undone."
+                confirmLabel="delete"
+                isDangerous={true}
+                onConfirm={confirmDelete}
+                onCancel={() => setDeleteConfirmation({ isOpen: false, sessionId: null })}
+            />
         </div >
     )
 }

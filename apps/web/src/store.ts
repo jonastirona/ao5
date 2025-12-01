@@ -85,6 +85,7 @@ interface StoreState {
   deleteSolve: (id: string) => void
   updateSolvePenalty: (id: string, penalty: "plus2" | "DNF" | null) => void
   setSolveSynced: (id: string, synced: boolean) => void
+  mergeSessionId: (oldId: string, newId: string) => void
 
   hydrateSolves: (entries: SolveEntry[], cloudSessions?: { id: string, name: string, puzzleType: string }[]) => void // Legacy/Cloud hydration
   getAllSolves: () => SolveEntry[]
@@ -778,6 +779,32 @@ export const useStore = create<StoreState>((set, get) => ({
       }
   },
 
+  mergeSessionId: (oldId: string, newId: string) => {
+      const state = get()
+      const sessions = state.sessions.map(s => {
+          if (s.id === oldId) {
+              return {
+                  ...s,
+                  id: newId,
+                  solves: s.solves.map(solve => ({ ...solve, sessionId: newId }))
+              }
+          }
+          return s
+      })
+      
+      let currentSessionId = state.currentSessionId
+      if (currentSessionId === oldId) {
+          currentSessionId = newId
+      }
+
+      set({ sessions, currentSessionId })
+      try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({ sessions, currentSessionId }))
+      } catch {
+          // Ignore
+      }
+  },
+
   deleteSolve: (id: string) => {
     const state = get()
     const session = state.sessions.find(s => s.id === state.currentSessionId)
@@ -873,9 +900,43 @@ export const useStore = create<StoreState>((set, get) => ({
   hydrateSolves: (entries: SolveEntry[], cloudSessions?: { id: string, name: string, puzzleType: string }[]) => {
     console.log('[store] Hydrating solves:', entries.length)
     const state = get()
-    // Group entries by sessionId if available, otherwise fallback to puzzleType
+    
+    let newSessions = [...state.sessions]
+
+    if (cloudSessions) {
+        // 1. Remove empty local-only sessions (cleanup guest sessions)
+        newSessions = newSessions.filter(s => {
+            const isCloud = cloudSessions.some(cs => cs.id === s.id)
+            const isEmpty = s.solves.length === 0
+            // Keep if it's a cloud session OR if it has local solves
+            return isCloud || !isEmpty
+        })
+
+        // 2. Ensure all cloud sessions exist locally
+        cloudSessions.forEach(cs => {
+            const existingIndex = newSessions.findIndex(s => s.id === cs.id)
+            if (existingIndex === -1) {
+                newSessions.push({
+                    id: cs.id,
+                    name: cs.name,
+                    puzzleType: cs.puzzleType as PuzzleType,
+                    solves: []
+                })
+            } else {
+                // Update metadata
+                newSessions[existingIndex] = {
+                    ...newSessions[existingIndex],
+                    name: cs.name,
+                    puzzleType: cs.puzzleType as PuzzleType
+                }
+            }
+        })
+    }
+
+    // 3. Distribute solves
+    // Group entries by sessionId
     const bySession: Record<string, SolveEntry[]> = {}
-    const byType: Record<string, SolveEntry[]> = {}
+    const legacyByType: Record<string, SolveEntry[]> = {}
     
     entries.forEach(e => {
         if (e.sessionId) {
@@ -883,55 +944,41 @@ export const useStore = create<StoreState>((set, get) => ({
             bySession[e.sessionId].push(e)
         } else {
             const type = e.puzzleType || '333'
-            if (!byType[type]) byType[type] = []
-            byType[type].push(e)
+            if (!legacyByType[type]) legacyByType[type] = []
+            legacyByType[type].push(e)
         }
     })
 
-    const newSessions = [...state.sessions]
-    
-    // 1. Handle solves with explicit sessionId
-    Object.entries(bySession).forEach(([sessionId, solves]) => {
-        const existingIndex = newSessions.findIndex(s => s.id === sessionId)
-        const cloudSession = cloudSessions?.find(cs => cs.id === sessionId)
+    // Assign solves to sessions
+    newSessions = newSessions.map(s => {
+        const sessionSolves = bySession[s.id] || []
+        
+        // If this session matches a legacy type and we have legacy solves, maybe we should include them?
+        // But usually legacy solves are put into a new "Cloud" session.
+        // Let's stick to explicit assignment first.
+        
+        return {
+            ...s,
+            solves: sessionSolves.sort((a, b) => a.timestamp - b.timestamp)
+        }
+    })
+
+    // 4. Handle legacy/unlinked solves
+    Object.entries(legacyByType).forEach(([type, solves]) => {
+        // Find a session to dump them in? Or create new?
+        // Existing logic created new "Cloud" sessions.
+        // Let's try to find an existing session of this type first?
+        // No, that might mix data. Safer to create separate if they lack ID.
+        
+        // Check if we already have a "Cloud" session for this type
+        const existingIndex = newSessions.findIndex(s => s.puzzleType === type && s.name.includes('Cloud'))
         
         if (existingIndex >= 0) {
-             // Update existing session with cloud data if available
-             const finalPuzzleType = cloudSession ? (cloudSession.puzzleType as PuzzleType) : newSessions[existingIndex].puzzleType
-             newSessions[existingIndex] = {
-                ...newSessions[existingIndex],
-                name: cloudSession ? cloudSession.name : newSessions[existingIndex].name,
-                puzzleType: finalPuzzleType,
-                solves: solves.map(s => ({ ...s, puzzleType: finalPuzzleType })).sort((a, b) => a.timestamp - b.timestamp)
-            }
-        } else {
-            // Create new session from cloud data
-            const type = cloudSession?.puzzleType || solves[0]?.puzzleType || '333'
-            const name = cloudSession?.name || `${SUPPORTED_EVENTS.find(e => e.id === type)?.name || type} (Cloud)`
-            
-            newSessions.push({
-                id: sessionId,
-                name,
-                puzzleType: type as PuzzleType,
-                solves: solves.map(s => ({ ...s, puzzleType: type as PuzzleType })).sort((a, b) => a.timestamp - b.timestamp)
-            })
-        }
-    })
-
-    // 2. Handle legacy/unlinked solves (fallback to type grouping)
-    Object.entries(byType).forEach(([type, solves]) => {
-        const existingSessionIndex = newSessions.findIndex(s => s.puzzleType === type)
-        if (existingSessionIndex >= 0) {
-             const currentSolves = newSessions[existingSessionIndex].solves
-             const merged = [...currentSolves, ...solves].sort((a, b) => a.timestamp - b.timestamp)
-             
-             // Deduplicate by ID
+             const current = newSessions[existingIndex].solves
+             const merged = [...current, ...solves].sort((a, b) => a.timestamp - b.timestamp)
+             // Dedup
              const unique = Array.from(new Map(merged.map(s => [s.id, s])).values())
-             
-             newSessions[existingSessionIndex] = {
-                ...newSessions[existingSessionIndex],
-                solves: unique
-            }
+             newSessions[existingIndex] = { ...newSessions[existingIndex], solves: unique }
         } else {
             newSessions.push({
                 id: crypto.randomUUID(),
@@ -942,22 +989,62 @@ export const useStore = create<StoreState>((set, get) => ({
         }
     })
     
+    // Ensure at least one session
+    if (newSessions.length === 0) {
+        const defaultSession: Session = {
+            id: crypto.randomUUID(),
+            name: '3x3 Session',
+            puzzleType: '3x3',
+            solves: []
+        }
+        newSessions = [defaultSession]
+    }
+
     // Update stats if current session was affected
-    const currentSession = newSessions.find(s => s.id === state.currentSessionId)
-    if (currentSession) {
-        const stats = calculateAverages(currentSession.solves)
-        set({ sessions: newSessions, ...stats })
+    let currentSessionId = state.currentSessionId
+    
+    // Determine the session with the latest activity (solve)
+    let latestSessionId = newSessions[0]?.id
+    let latestTimestamp = -1
+    
+    newSessions.forEach(s => {
+        if (s.solves.length > 0) {
+            const lastSolve = s.solves[s.solves.length - 1]
+            if (lastSolve.timestamp > latestTimestamp) {
+                latestTimestamp = lastSolve.timestamp
+                latestSessionId = s.id
+            }
+        }
+    })
+
+    // If current session was removed OR if we want to default to latest (e.g. on fresh login/hydration)
+    // We should probably switch to latest if the current session is empty/default AND we have a better one?
+    // Or simply: if the current session ID is NOT in the new list, switch to latest.
+    // AND: if the current session is "empty" but we have other sessions with data, maybe switch?
+    // Let's stick to: if current is removed, switch to latest.
+    
+    const currentExists = newSessions.find(s => s.id === currentSessionId)
+    
+    if (!currentExists) {
+        currentSessionId = latestSessionId
     } else {
-        // If current session is invalid (e.g. deleted or not found), switch to first available
-        if (newSessions.length > 0) {
-            set({ sessions: newSessions, currentSessionId: newSessions[0].id })
-        } else {
-             set({ sessions: newSessions })
+        // If current exists but is empty, and we have a session with data, switch to it?
+        // Only if we are hydrating from cloud (which implies a sync/login event usually)
+        if (cloudSessions && currentExists.solves.length === 0 && latestTimestamp > 0) {
+             currentSessionId = latestSessionId
         }
     }
     
+    const currentSession = newSessions.find(s => s.id === currentSessionId)
+    if (currentSession) {
+        const stats = calculateAverages(currentSession.solves)
+        set({ sessions: newSessions, currentSessionId, ...stats })
+    } else {
+        set({ sessions: newSessions, currentSessionId })
+    }
+    
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ sessions: newSessions, currentSessionId: state.currentSessionId }))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ sessions: newSessions, currentSessionId }))
     } catch {
       // Ignore storage errors
     }

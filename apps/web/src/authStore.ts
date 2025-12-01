@@ -28,6 +28,10 @@ interface AuthState {
   shouldPromptSync: boolean
   lastSyncTime: number | null
   showLoginPrompt: boolean
+  mergePrompt: { isOpen: boolean, localSessionId: string, cloudSessions: { id: string, name: string, puzzleType: string }[] } | null
+
+  setMergePrompt: (prompt: AuthState['mergePrompt']) => void
+  resolveMerge: (targetSessionId: string | null) => Promise<void>
 
   setShowLoginPrompt: (show: boolean) => void
   init: () => Promise<void>
@@ -57,6 +61,41 @@ export const useAuth = create<AuthState>((set, get) => ({
   shouldPromptSync: false,
   lastSyncTime: null,
   showLoginPrompt: false,
+  mergePrompt: null,
+
+  setMergePrompt: (prompt) => set({ mergePrompt: prompt }),
+
+  resolveMerge: async (targetSessionId) => {
+      const prompt = get().mergePrompt
+      if (!prompt) return
+      
+      set({ mergePrompt: null }) // Close prompt
+
+      try {
+          if (targetSessionId) {
+              console.log('[auth] Merging local session', prompt.localSessionId, 'into', targetSessionId)
+              
+              // Find target session details
+              const targetSession = prompt.cloudSessions.find(s => s.id === targetSessionId)
+              
+              // Update local session ID to match target
+              useStore.getState().mergeSessionId(prompt.localSessionId, targetSessionId)
+              
+              // Also update the name to match the target session, so we don't overwrite it on sync
+              if (targetSession) {
+                  useStore.getState().renameSession(targetSessionId, targetSession.name)
+              }
+          } else {
+              console.log('[auth] Keeping local session separate (will create new on cloud)')
+          }
+
+          // Now sync
+          await get().syncLocalSolvesToCloud()
+          await get().hydrateFromCloud()
+      } catch (e) {
+          console.error('[auth] Merge/Sync failed:', e)
+      }
+  },
 
   setShowLoginPrompt: (show) => set({ showLoginPrompt: show }),
 
@@ -137,9 +176,19 @@ export const useAuth = create<AuthState>((set, get) => ({
 
   signInWithGoogle: async () => {
     set({ error: null })
+    // Dynamically determine redirect URL based on current environment
+    const redirectUrl = window.location.origin
+    console.log('[auth] Signing in with Google, redirect to:', redirectUrl)
+    
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin }
+      options: { 
+        redirectTo: redirectUrl,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        }
+      }
     })
     if (error) {
       set({ error: error.message })
@@ -151,9 +200,12 @@ export const useAuth = create<AuthState>((set, get) => ({
     set({ error: null })
     const { error } = await supabase.auth.signOut()
     if (error) {
-      set({ error: error.message })
-      throw error
+      console.warn('[auth] Sign out error (ignoring to ensure local cleanup):', error)
     }
+    
+    // Force clear local state regardless of server response
+    set({ session: null, user: null })
+
     // Clear local solves on logout to avoid cross-account bleed
     try {
       useStore.getState().clearSolves()
@@ -411,8 +463,39 @@ async function ensureProfileAndHydration(userId: string): Promise<void> {
       }
 
       // Auto-sync local work before hydrating
-      console.log('[auth] Auto-syncing guest work...')
+      console.log('[auth] Checking for local work...')
       try {
+          const localSolves = useStore.getState().getAllSolves()
+          // Check if we have any local solves that are NOT synced (which is all of them for a guest)
+          // Actually, for a guest, 'synced' is false or undefined.
+          // But we should check if there are ANY solves.
+          if (localSolves.length > 0) {
+              console.log('[auth] Found local solves, checking for merge candidates...')
+              const cloudSessions = await import('./cloudSync').then(m => m.fetchCloudSessions())
+              
+              if (cloudSessions && cloudSessions.length > 0) {
+                  // Find the current local session to determine puzzle type
+                  const currentLocalId = useStore.getState().currentSessionId
+                  const currentLocalSession = useStore.getState().sessions.find(s => s.id === currentLocalId)
+                  
+                  if (currentLocalSession && currentLocalSession.solves.length > 0) {
+                      // Filter cloud sessions by same puzzle type
+                      const candidates = cloudSessions.filter(s => s.puzzleType === currentLocalSession.puzzleType)
+                      
+                      if (candidates.length > 0) {
+                          console.log('[auth] Found merge candidates, prompting user')
+                          useAuth.getState().setMergePrompt({
+                              isOpen: true,
+                              localSessionId: currentLocalId,
+                              cloudSessions: candidates
+                          })
+                          return // Stop here, wait for user interaction
+                      }
+                  }
+              }
+          }
+          
+          // If no local solves OR no candidates, just auto-sync (create new)
           await useAuth.getState().syncLocalSolvesToCloud()
       } catch (e) {
           console.warn('[auth] Auto-sync failed (likely no local solves or network error):', e)

@@ -6,7 +6,9 @@ import './index.css'
 import App from './App.tsx'
 
 // Initialize Sentry
-if (import.meta.env.VITE_SENTRY_DSN) {
+const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+
+if (!isLocalhost && import.meta.env.VITE_SENTRY_DSN) {
   Sentry.init({
     dsn: import.meta.env.VITE_SENTRY_DSN,
     integrations: [
@@ -22,7 +24,7 @@ if (import.meta.env.VITE_SENTRY_DSN) {
 }
 
 // Initialize PostHog
-if (import.meta.env.VITE_POSTHOG_KEY) {
+if (!isLocalhost && import.meta.env.VITE_POSTHOG_KEY) {
   posthog.init(import.meta.env.VITE_POSTHOG_KEY, {
     api_host: import.meta.env.VITE_POSTHOG_HOST || 'https://us.i.posthog.com',
     person_profiles: 'identified_only',
