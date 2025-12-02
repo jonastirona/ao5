@@ -18,6 +18,15 @@
 - **Session Management**: Organize your solves into sessions, rename them, and merge guest data.
 - **Customization**: Choose from many themes to match your style.
 - **Import/Export**: Easy migration from CSTimer and JSON data backup.
+- **PWA Support**: Install as a native app on your device.
+
+## Key Bindings
+
+- **Space**: Start/Stop timer (hold to inspect).
+- **Esc**: Reset timer / Cancel inspection.
+- **Alt + 2**: Toggle +2 penalty.
+- **Alt + D**: Toggle DNF penalty.
+- **? / Shift + /**: Open onboarding tour.
 
 ## Getting Started
 

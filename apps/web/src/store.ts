@@ -874,7 +874,9 @@ export const useStore = create<StoreState>((set, get) => ({
             lastSessionId: state.currentSessionId,
             guestSolveCount: state.guestSolveCount 
         }))
-    } catch {}
+    } catch {
+        // Ignore storage errors
+    }
 
     // Cloud sync
     void (async () => {
@@ -909,7 +911,9 @@ export const useStore = create<StoreState>((set, get) => ({
               lastSessionId: state.currentSessionId,
               guestSolveCount: state.guestSolveCount 
           }))
-      } catch {}
+      } catch {
+          // Ignore storage errors
+      }
 
       // Cloud sync
       void (async () => {

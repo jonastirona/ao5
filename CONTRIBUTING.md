@@ -30,8 +30,10 @@ Thank you for your interest in contributing to ao5! We welcome contributions fro
     ```bash
     git checkout -b feature/my-new-feature
     ```
-2.  Make your changes.
-3.  Ensure code quality (linting and formatting):
+2.  **Make your changes**:
+    - We use **TypeScript**, so please ensure your code is strongly typed.
+    - Follow the existing code style and conventions.
+3.  **Ensure code quality**:
     ```bash
     pnpm lint
     ```

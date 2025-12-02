@@ -209,13 +209,18 @@ export const useAuth = create<AuthState>((set, get) => ({
       
       if (!existingProfile) {
         // Only insert if profile doesn't exist
-        const { error: insertError } = await supabase
-          .from('profiles')
-          .insert({ id: userId, username })
+        const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: userId,
+          username: username,
+          email: data.user!.email,
+          updated_at: new Date().toISOString(),
+        })
         
-        if (insertError) {
-          set({ error: insertError.message })
-          throw insertError
+        if (profileError) {
+          set({ error: profileError.message })
+          throw profileError
         }
         set({ username })
       } else {
@@ -495,11 +500,13 @@ async function ensureProfileAndHydration(userId: string): Promise<void> {
       console.log('[auth] Background setup start for user:', userId)
       
       // Always fetch the existing profile - never create or overwrite
-      let { data: profile, error: profileError } = await supabase
+      const { data: initialProfile, error: profileError } = await supabase
         .from('profiles')
         .select('theme, username')
         .eq('id', userId)
         .maybeSingle()
+      
+      let profile = initialProfile
 
       if (profileError) {
         console.error('[auth] Error fetching profile:', profileError)
