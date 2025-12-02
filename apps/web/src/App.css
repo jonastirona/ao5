@@ -525,6 +525,15 @@ body {
   word-break: break-word;
 }
 
+.scramble-visualization {
+  width: 100%;
+  height: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: var(--space-2);
+}
+
 /* Timer Display */
 .timer-container {
   display: flex;
