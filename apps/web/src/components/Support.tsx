@@ -99,7 +99,7 @@ export default function Support() {
                 {activeTab === 'ads' && (
                     <div className="support-section">
                         <h3>ads</h3>
-                        <p className="subtitle">coming soon - we need to pay the bills</p>
+                        <p className="subtitle">coming soon, wee need to pay the bills - but we will keep them super minimal and toggleable - you can turn them off!</p>
                     </div>
                 )}
 
