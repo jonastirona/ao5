@@ -107,6 +107,9 @@ export default function Support() {
                     <div className="support-section">
                         <h3>send feedback</h3>
                         <p>found a bug, have a feature request, or want to contact us? let us know!</p>
+                        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                            you can also email us directly at <a href="mailto:jonastirona@gmail.com" style={{ color: 'var(--accent)' }}>jonastirona@gmail.com</a>
+                        </p>
 
                         {isSuccess ? (
                             <div className="feedback-success">
