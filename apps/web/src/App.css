@@ -1532,22 +1532,28 @@ body {
   box-shadow: var(--shadow);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
-  position: absolute;
-  bottom: 0;
+
+  position: fixed;
+  bottom: var(--space-4);
   left: 0;
   right: 0;
+  margin: 0 auto;
+
+  transform: translateY(20px);
+  /* Only animate Y */
+
+  width: calc(100% - 2 * var(--space-2));
+  max-width: 560px;
   z-index: 100;
-  max-height: 44px;
-  /* Match collapsed card height */
+
+  /* Collapsed state properties */
+  max-height: 0;
   opacity: 0;
-  transform: translateY(100%);
   pointer-events: none;
   visibility: hidden;
+
   transform-origin: bottom center;
   will-change: transform, opacity, max-height;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
   box-sizing: border-box;
 }
 
@@ -1558,23 +1564,12 @@ body {
 .solves-list-container.expanded {
   max-height: min(400px, 70vh);
   opacity: 1;
-  transform: translateX(-50%) translateY(0);
+  transform: translateY(0);
+  /* Only animate Y */
   overflow-y: auto;
   pointer-events: auto;
   visibility: visible;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 9999;
-  /* Ensure it's above everything */
-  position: fixed;
-  /* Fix to viewport to avoid clipping by parents */
-  bottom: var(--space-2);
-  left: 50%;
-  right: auto;
-  width: calc(100% - 2 * var(--space-2));
-  max-width: 560px;
-  /* Limit width on larger screens */
-  margin: 0;
-  /* Center it */
 }
 
 @media (max-width: 768px) {

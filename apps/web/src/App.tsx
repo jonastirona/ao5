@@ -186,14 +186,7 @@ function AppContent() {
                 </main>
                 <footer className={`footer ${shouldHide ? 'hidden' : ''}`} data-tour="solve-list" style={{ flexDirection: 'column', gap: '0.5rem' }}>
                   <SessionList />
-                  <div style={{
-                    fontSize: '12px',
-                    color: 'var(--text-secondary)',
-                    fontFamily: 'var(--font-mono)',
-                    opacity: 0.7
-                  }}>
-                    v{__APP_VERSION__}
-                  </div>
+
                 </footer>
               </>
             )}
