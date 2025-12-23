@@ -8,7 +8,7 @@ import { useAuth } from '../authStore'
  * Provides options for donations, viewing ad status, and sending feedback.
  */
 export default function Support() {
-    const [activeTab, setActiveTab] = useState<'donate' | 'ads' | 'feedback'>('donate')
+    const [activeTab, setActiveTab] = useState<'donate' | 'sponsors' | 'feedback'>('donate')
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [isSuccess, setIsSuccess] = useState(false)
     const [isDropdownOpen, setIsDropdownOpen] = useState(false)
@@ -59,13 +59,13 @@ export default function Support() {
                     donate
                 </button>
                 <button
-                    className={`tab ${activeTab === 'ads' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('ads')}
+                    className={`tab ${activeTab === 'sponsors' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('sponsors')}
                 >
                     <svg className="tab-icon" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
                     </svg>
-                    ads
+                    sponsors
                 </button>
                 <button
                     className={`tab ${activeTab === 'feedback' ? 'active' : ''}`}
@@ -96,10 +96,30 @@ export default function Support() {
                     </div>
                 )}
 
-                {activeTab === 'ads' && (
+                {activeTab === 'sponsors' && (
                     <div className="support-section">
-                        <h3>ads</h3>
-                        <p className="subtitle">coming soon, wee need to pay the bills - but we will keep them super minimal and toggleable - you can turn them off!</p>
+                        <h3>sponsors</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.6' }}>
+                            <p>ao5 is a free, open-source speedcubing timer built for the community: fast, clean, and distraction-free.</p>
+                            <p>there are currently no sponsors supporting ao5. to keep the experience minimal and enjoyable, ao5 will never display intrusive ads.</p>
+                            <p>if you’re a cubing brand, creator, or organization interested in supporting ao5, sponsorships help cover hosting costs and fund future features, while keeping the app free for everyone.</p>
+                        </div>
+
+                        <div style={{ marginTop: '2rem', padding: '1.5rem', background: 'rgba(158, 197, 171, 0.05)', borderRadius: '8px', border: '1px solid rgba(158, 197, 171, 0.1)' }}>
+                            <h4 style={{ margin: '0 0 1rem 0', color: 'var(--text-primary)', fontSize: '16px' }}>interested in sponsoring ao5?</h4>
+                            <ul style={{ margin: '0 0 1.5rem 0', paddingLeft: '1.2rem', color: 'var(--text-secondary)', fontSize: '14px', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <li>get a tasteful banner on this page</li>
+                                <li>support an open-source cubing tool</li>
+                                <li>reach dedicated speedcubers worldwide</li>
+                            </ul>
+                            <a
+                                href="mailto:jonastirona@gmail.com?subject=Sponsorship%20Inquiry%20for%20ao5"
+                                className="btn primary"
+                                style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}
+                            >
+                                contact us to sponsor
+                            </a>
+                        </div>
                     </div>
                 )}
 
