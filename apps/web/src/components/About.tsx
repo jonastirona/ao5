@@ -128,6 +128,16 @@ export default function About() {
                 </div>
 
                 <div className="settings-section">
+                    <h3>contribute</h3>
+                    <div className="credits-list">
+                        <div className="credit-item">
+                            <strong>source code</strong>
+                            <p>
+                                ao5 is open source. star the repo, report bugs, or contribute features on <a href="https://github.com/jonastirona/ao5" target="_blank" rel="noopener noreferrer">GitHub</a>.
+                            </p>
+                        </div>
+                    </div>
+
                     <h3>credits</h3>
                     <div className="credits-list">
                         <div className="credit-item">
