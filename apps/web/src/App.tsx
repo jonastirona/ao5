@@ -25,6 +25,7 @@ import GuestBanner from './components/GuestBanner'
 import LoginPromptModal from './components/LoginPromptModal'
 import MergeSessionModal from './components/MergeSessionModal'
 import HelpTooltip from './components/HelpTooltip'
+import SEO from './components/SEO'
 
 function AppContent() {
   // Initialize auth/session on app start
@@ -176,6 +177,7 @@ function AppContent() {
             path="/"
             element={(
               <>
+                <SEO />
                 <div className={`scramble-layer ${shouldHide ? 'hidden' : ''}`} data-tour="scramble">
                   <Suspense fallback={<div style={{ height: 150 }}></div>}>
                     <ScrambleDisplay />
@@ -191,13 +193,13 @@ function AppContent() {
               </>
             )}
           />
-          <Route path="/stats" element={<Analytics />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/support" element={<Support />} />
-          <Route path="/privacy" element={<PrivacyPolicy />} />
-          <Route path="/terms" element={<TermsOfService />} />
-          <Route path="/account" element={<Account />} />
+          <Route path="/stats" element={<><SEO title="Statistics | ao5" path="/stats" description="Analyze your solve times, view graphs, and track your progress." /><Analytics /></>} />
+          <Route path="/settings" element={<><SEO title="Settings | ao5" path="/settings" /><Settings /></>} />
+          <Route path="/about" element={<><SEO title="About | ao5" path="/about" description="Everything you need to know about ao5." /><About /></>} />
+          <Route path="/support" element={<><SEO title="Support | ao5" path="/support" description="Get help, report bugs, or request features for ao5." /><Support /></>} />
+          <Route path="/privacy" element={<><SEO title="Privacy Policy | ao5" path="/privacy" description="Our commitment to your privacy." /><PrivacyPolicy /></>} />
+          <Route path="/terms" element={<><SEO title="Terms of Service | ao5" path="/terms" /><TermsOfService /></>} />
+          <Route path="/account" element={<><SEO title="Your Account | ao5" path="/account" /><Account /></>} />
         </Routes>
       </div>
     </>
