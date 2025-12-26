@@ -2,10 +2,7 @@ import { useEffect, useState } from 'react'
 import { useStore } from '../../store'
 import '../../App.css' // Ensure we have access to variables if needed, though usually inherited
 
-interface BeforeInstallPromptEvent extends Event {
-    prompt: () => Promise<void>
-    userChoice: Promise<{ outcome: 'accepted' | 'dismissed', platform: string }>
-}
+
 
 export default function PWAInstall() {
     const deferredPrompt = useStore(s => s.installPrompt)
