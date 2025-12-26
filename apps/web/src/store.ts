@@ -956,7 +956,10 @@ export const useStore = create<StoreState>((set, get) => ({
   },
 
   getAllSolves: () => {
-      return get().sessions.flatMap(s => s.solves)
+      return get().sessions.flatMap(s => s.solves.map(solve => ({
+          ...solve,
+          puzzleType: s.puzzleType
+      })))
   },
 
   hydrateSolves: (entries: SolveEntry[], cloudSessions?: { id: string, name: string, puzzleType: string }[]) => {

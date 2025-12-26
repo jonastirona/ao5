@@ -1,6 +1,6 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useRef, useMemo, useState, useEffect } from 'react'
 import { useStore } from '../store'
-import { SUPPORTED_EVENTS, calculateAverages, getBestAverage } from 'core'
+import { SUPPORTED_EVENTS, calculateAverages, getBestAverage, computeTrimmedAverage } from 'core'
 import Plot from 'react-plotly.js'
 import ShareModal from './ShareModal'
 import {
@@ -13,6 +13,8 @@ import {
     Bar
 } from 'recharts'
 import { Link } from 'react-router-dom'
+
+// ... (keep formatTime and filterByTime helper functions same as original)
 
 /**
  * Formats milliseconds into MM:SS.CC or SS.CC format.
@@ -50,11 +52,6 @@ const filterByTime = (solves: import('../store').SolveEntry[], range: string) =>
     return solves.filter(s => s.timestamp >= cutoff.getTime())
 }
 
-/**
- * Analytics dashboard component.
- * Displays detailed statistics, activity heatmap, progression charts, and time distribution.
- * Allows filtering by session or puzzle type.
- */
 export default function Analytics() {
     const [filter, setFilter] = useState<'session' | 'type'>('session')
     const [selectedType, setSelectedType] = useState<string>('333')
@@ -66,11 +63,19 @@ export default function Analytics() {
     const [isShareModalOpen, setIsShareModalOpen] = useState(false)
     const [shareData, setShareData] = useState<{ title?: string, value?: string }>({})
 
+    // Rolling Average Toggles
+    const [showAo5, setShowAo5] = useState(false)
+    const [showAo12, setShowAo12] = useState(false)
+    const [showAo100, setShowAo100] = useState(false)
+    const [lineMode, setLineMode] = useState<'none' | 'trend' | 'connect'>('trend') // Default to trend
+    const [resetCount, setResetCount] = useState(0)
+
     const currentSessionId = useStore(s => s.currentSessionId)
     const sessions = useStore(s => s.sessions)
     const getAllSolves = useStore(s => s.getAllSolves)
 
-    const filteredSolves = useMemo(() => {
+    // Base set of solves (Session or Type)
+    const allRelevantSolves = useMemo(() => {
         if (filter === 'session') {
             const session = sessions.find(s => s.id === currentSessionId)
             return session ? session.solves : []
@@ -81,19 +86,44 @@ export default function Analytics() {
         }
     }, [filter, selectedType, sessions, currentSessionId, getAllSolves])
 
-    // Heatmap Data
+    // Calculate Rolling Averages globally to ensure context is preserved
+    const solvesWithAverages = useMemo(() => {
+        const sorted = [...allRelevantSolves].sort((a, b) => a.timestamp - b.timestamp)
+
+        return sorted.map((s, i) => {
+            const windowEnd = i + 1
+            // Optimization: slice last 100 for performance
+            const start = Math.max(0, windowEnd - 100)
+            const subset = sorted.slice(start, windowEnd)
+
+            return {
+                ...s,
+                rollingAo5: computeTrimmedAverage(subset, 5),
+                rollingAo12: computeTrimmedAverage(subset, 12),
+                rollingAo100: computeTrimmedAverage(subset, 100)
+            }
+        })
+    }, [allRelevantSolves])
+
+    // Filter for Heatmap (using base relevant solves is fine)
+    const filteredSolves = allRelevantSolves;
+
+    // ... (keep Heatmap Data logic same as original, lines 85-146) 
+
+    // WAIT: I cannot replace the whole block easily. 
+    // I will replace just the `filteredSolves` definition and add the new computations.
+
+    // ... (keep Heatmap Data logic same as original, lines 85-146) 
     const heatmapData = useMemo(() => {
         const startOfYear = new Date(heatmapYear, 0, 1)
         const endOfYear = new Date(heatmapYear, 11, 31)
 
-        // Map date string (YYYY-MM-DD) to count
         const counts: Record<string, number> = {}
         let maxCount = 0
 
         filteredSolves.forEach(s => {
             const date = new Date(s.timestamp)
             if (date.getFullYear() === heatmapYear) {
-                // Use local date for key to match user's timezone
                 const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
                 counts[key] = (counts[key] || 0) + 1
                 maxCount = Math.max(maxCount, counts[key])
@@ -105,7 +135,6 @@ export default function Analytics() {
         let currentWeek = []
         const currentDate = new Date(startOfYear)
 
-        // Align start date to Sunday
         const dayOfWeek = currentDate.getDay()
         for (let i = 0; i < dayOfWeek; i++) {
             currentWeek.push(null)
@@ -116,7 +145,6 @@ export default function Analytics() {
         while (currentDate <= endOfYear) {
             const key = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`
 
-            // Check for month change
             if (currentDate.getMonth() !== lastMonth) {
                 months.push({ name: currentDate.toLocaleString('default', { month: 'short' }), weekIndex: weeks.length })
                 lastMonth = currentDate.getMonth()
@@ -142,11 +170,12 @@ export default function Analytics() {
         return { weeks, months }
     }, [filteredSolves, heatmapYear])
 
-    const progressionFilteredSolves = useMemo(() => filterByTime(filteredSolves, progressionTimeRange), [filteredSolves, progressionTimeRange])
+    const progressionFilteredSolves = useMemo(() => filterByTime(solvesWithAverages, progressionTimeRange), [solvesWithAverages, progressionTimeRange])
     const distributionFilteredSolves = useMemo(() => filterByTime(filteredSolves, distributionTimeRange), [filteredSolves, distributionTimeRange])
 
     const stats = useMemo(() => {
-        const validSolves = filteredSolves.filter(s => s.penalty !== 'DNF')
+        // Use time-filtered solves to reflect the selected range
+        const validSolves = progressionFilteredSolves.filter(s => s.penalty !== 'DNF')
         const times = validSolves.map(s => s.timeMs + (s.penalty === 'plus2' ? 2000 : 0))
 
         if (times.length === 0) return null
@@ -169,19 +198,40 @@ export default function Analytics() {
         const first = validSolves[0].timeMs + (validSolves[0].penalty === 'plus2' ? 2000 : 0)
         const improvement = first - best
 
+        // Calculate Trend (Linear Regression)
+        let trend = 0
+        if (validSolves.length > 1) {
+            let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0
+            validSolves.forEach(s => {
+                const x = s.timestamp
+                const y = (s.timeMs + (s.penalty === 'plus2' ? 2000 : 0)) / 1000
+                sumX += x
+                sumY += y
+                sumXY += x * y
+                sumXX += x * x
+            })
+            const n = validSolves.length
+            const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX)
+
+            // Trend is the predicted difference between end and start
+            const startX = validSolves[0].timestamp
+            const endX = validSolves[validSolves.length - 1].timestamp
+            trend = slope * (endX - startX)
+        }
+
         const currentAverages = calculateAverages(validSolves)
         const bestAo5 = getBestAverage(validSolves, 5)
         const bestAo12 = getBestAverage(validSolves, 12)
         const bestAo100 = getBestAverage(validSolves, 100)
 
         return {
-            best, worst, mean, median, stdDev, count: filteredSolves.length, totalTime, improvement,
+            best, worst, mean, median, stdDev, count: validSolves.length, totalTime, improvement, trend,
             bestAo5, bestAo12, bestAo100,
             avgAo5: currentAverages.ao5,
             avgAo12: currentAverages.ao12,
             avgAo100: currentAverages.ao100
         }
-    }, [filteredSolves])
+    }, [progressionFilteredSolves])
 
     const currentTheme = useStore(state => state.currentTheme)
     const [themeColors, setThemeColors] = useState({
@@ -192,7 +242,6 @@ export default function Analytics() {
         border: '#104f55'
     })
 
-    // Update colors when theme changes
     useEffect(() => {
         const getVar = (name: string) => getComputedStyle(document.body).getPropertyValue(name).trim()
 
@@ -209,16 +258,67 @@ export default function Analytics() {
         return () => clearTimeout(timer)
     }, [currentTheme])
 
+    const deleteSolve = useStore(state => state.deleteSolve)
+
+    // Custom Tooltip State
+    const [tooltipData, setTooltipData] = useState<{ x: number, y: number, solve: any } | null>(null)
+    const tooltipTimeout = useRef<NodeJS.Timeout | null>(null)
+
+    const handlePointHover = (e: Readonly<Plotly.PlotMouseEvent>) => {
+        if (tooltipTimeout.current) clearTimeout(tooltipTimeout.current)
+
+        const point = e.points.find(p => p.data.name === 'Single')
+        if (point && point.pointIndex !== undefined) {
+            // Get original event coordinates
+            const { clientX, clientY } = (e.event as any)
+            const solve = chartData[point.pointIndex].raw
+
+            setTooltipData({
+                x: clientX,
+                y: clientY,
+                solve
+            })
+        }
+    }
+
+    const handlePointUnhover = () => {
+        tooltipTimeout.current = setTimeout(() => {
+            setTooltipData(null)
+        }, 300) // 300ms grace period to move to tooltip
+    }
+
+    const handleTooltipEnter = () => {
+        if (tooltipTimeout.current) clearTimeout(tooltipTimeout.current)
+    }
+
+    const handleTooltipLeave = () => {
+        tooltipTimeout.current = setTimeout(() => {
+            setTooltipData(null)
+        }, 300)
+    }
+
+    const handleDeleteSolve = async (id: string) => {
+        if (window.confirm('Delete this solve?')) {
+            await deleteSolve(id)
+            setTooltipData(null)
+        }
+    }
+
     const chartData = useMemo(() => {
-        return progressionFilteredSolves
-            .sort((a, b) => a.timestamp - b.timestamp)
-            .map((s, i) => ({
+        // Solves are already sorted and have averages calculated in solvesWithAverages -> progressionFilteredSolves
+        return progressionFilteredSolves.map((s, i) => {
+            const item = s as any
+            return {
                 index: i + 1,
                 timestamp: s.timestamp,
                 time: s.penalty === 'DNF' ? null : (s.timeMs + (s.penalty === 'plus2' ? 2000 : 0)) / 1000,
+                ao5: item.rollingAo5 && item.rollingAo5 > 0 ? item.rollingAo5 / 1000 : null,
+                ao12: item.rollingAo12 && item.rollingAo12 > 0 ? item.rollingAo12 / 1000 : null,
+                ao100: item.rollingAo100 && item.rollingAo100 > 0 ? item.rollingAo100 / 1000 : null,
                 date: new Date(s.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
                 raw: s
-            }))
+            }
+        })
     }, [progressionFilteredSolves])
 
     const distributionData = useMemo(() => {
@@ -246,9 +346,213 @@ export default function Analytics() {
         }))
     }, [distributionFilteredSolves])
 
+    // Construct Traces dynamically
+    const traces: Plotly.Data[] = [
+        // Main Scatter (Single Solves)
+        {
+            x: chartData.map(d => new Date(d.timestamp)),
+            y: chartData.map(d => d.time),
+            type: 'scatter',
+            name: 'Single',
+            mode: lineMode === 'connect' ? 'lines+markers' : 'markers',
+            marker: { color: themeColors.accent, size: 6, opacity: 0.8 }, // Increased target size
+            line: { color: themeColors.accent, width: 1, shape: 'linear' },
+            connectgaps: false,
+            hoverinfo: 'none', // Disable default hover for this trace
+        }
+    ]
+
+    // Trend Line Trace (Linear Regression)
+    if (lineMode === 'trend' && chartData.length > 1) {
+        // Simple Least Squares Regression
+        let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0
+
+        // Filter out nulls for regression
+        const validPoints = chartData.filter(d => d.time !== null)
+        const count = validPoints.length
+
+        if (count > 1) {
+            validPoints.forEach(d => {
+                const x = d.timestamp
+                const y = d.time as number
+                sumX += x
+                sumY += y
+                sumXY += x * y
+                sumXX += x * x
+            })
+
+            const slope = (count * sumXY - sumX * sumY) / (count * sumXX - sumX * sumX)
+            const intercept = (sumY - slope * sumX) / count
+
+            const startX = validPoints[0].timestamp
+            const endX = validPoints[validPoints.length - 1].timestamp
+            const startY = slope * startX + intercept
+            const endY = slope * endX + intercept
+
+            traces.push({
+                x: [new Date(startX), new Date(endX)],
+                y: [startY, endY],
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Trend',
+                line: { color: themeColors.accent, width: 2, dash: 'dot' },
+                hoverinfo: 'skip'
+            })
+        }
+    }
+
+    // Ao5 Trace
+    if (showAo5) {
+        traces.push({
+            x: chartData.map(d => new Date(d.timestamp)),
+            y: chartData.map(d => d.ao5),
+            type: 'scatter',
+            mode: 'lines',
+            name: 'Ao5',
+            line: { color: themeColors.textPrimary, width: 2, shape: 'spline' },
+            connectgaps: true,
+            hovertemplate: 'Ao5: %{y:.2f}s<extra></extra>',
+        })
+    }
+
+    // Ao12 Trace
+    if (showAo12) {
+        traces.push({
+            x: chartData.map(d => new Date(d.timestamp)),
+            y: chartData.map(d => d.ao12),
+            type: 'scatter',
+            mode: 'lines',
+            name: 'Ao12',
+            line: { color: themeColors.textSecondary, width: 2, shape: 'spline', dash: 'dash' }, // Dashed for distinction
+            connectgaps: true,
+            hovertemplate: 'Ao12: %{y:.2f}s<extra></extra>',
+        })
+    }
+
+    // Ao100 Trace
+    if (showAo100) {
+        traces.push({
+            x: chartData.map(d => new Date(d.timestamp)),
+            y: chartData.map(d => d.ao100),
+            type: 'scatter',
+            mode: 'lines',
+            name: 'Ao100',
+            line: { color: themeColors.border, width: 2, shape: 'spline', dash: 'dot' }, // Dotted for long trend
+            connectgaps: true,
+            hovertemplate: 'Ao100: %{y:.2f}s<extra></extra>',
+        })
+    }
+
     return (
         <div className="analytics-container">
+            {tooltipData && (
+                <div
+                    className="chart-tooltip"
+                    style={{
+                        position: 'fixed',
+                        left: tooltipData.x + 15,
+                        top: tooltipData.y - 40,
+                        backgroundColor: themeColors.bg,
+                        border: `1px solid ${themeColors.border}`,
+                        padding: '12px',
+                        borderRadius: '8px',
+                        zIndex: 9999,
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                        pointerEvents: 'auto',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '6px',
+                        minWidth: '160px',
+                        maxWidth: '220px'
+                    }}
+                    onMouseEnter={handleTooltipEnter}
+                    onMouseLeave={handleTooltipLeave}
+                >
+                    {/* Header: Time + Delete */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                            <span style={{ color: themeColors.accent, fontWeight: '700', fontSize: '1.2rem' }}>
+                                {formatTime(tooltipData.solve.timeMs + (tooltipData.solve.penalty === 'plus2' ? 2000 : 0))}
+                            </span>
+                            {tooltipData.solve.penalty === 'plus2' && (
+                                <span style={{ fontSize: '0.75rem', color: 'var(--error)' }}>(+2)</span>
+                            )}
+                        </div>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation()
+                                handleDeleteSolve(tooltipData.solve.id)
+                            }}
+                            style={{
+                                background: 'rgba(255,255,255,0.1)',
+                                border: 'none',
+                                color: 'var(--text-secondary)',
+                                cursor: 'pointer',
+                                width: '24px',
+                                height: '24px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                borderRadius: '4px',
+                                fontSize: '14px',
+                                transition: 'all 0.2s'
+                            }}
+                            className="tooltip-delete-btn"
+                            title="Delete Solve"
+                        >
+                            ✕
+                        </button>
+                    </div>
+
+                    {/* Date */}
+                    <div style={{ fontSize: '0.75rem', color: themeColors.textSecondary, marginBottom: '6px' }}>
+                        {new Date(tooltipData.solve.timestamp).toLocaleDateString(undefined, {
+                            weekday: 'short',
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                        })}
+                    </div>
+
+                    {/* Stats Grid */}
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'auto 1fr',
+                        gap: '4px 12px',
+                        fontSize: '0.75rem'
+                    }}>
+                        {(tooltipData.solve as any).rollingAo5 ? (
+                            <>
+                                <span style={{ color: themeColors.textSecondary }}>ao5</span>
+                                <span style={{ color: themeColors.textPrimary, textAlign: 'right' }}>
+                                    {formatTime((tooltipData.solve as any).rollingAo5)}
+                                </span>
+                            </>
+                        ) : null}
+
+                        {(tooltipData.solve as any).rollingAo12 ? (
+                            <>
+                                <span style={{ color: themeColors.textSecondary }}>ao12</span>
+                                <span style={{ color: themeColors.textPrimary, textAlign: 'right' }}>
+                                    {formatTime((tooltipData.solve as any).rollingAo12)}
+                                </span>
+                            </>
+                        ) : null}
+
+                        {(tooltipData.solve as any).rollingAo100 ? (
+                            <>
+                                <span style={{ color: themeColors.textSecondary }}>ao100</span>
+                                <span style={{ color: themeColors.textPrimary, textAlign: 'right' }}>
+                                    {formatTime((tooltipData.solve as any).rollingAo100)}
+                                </span>
+                            </>
+                        ) : null}
+                    </div>
+                </div>
+            )}
+
             <div className="analytics-header">
+                {/* ... (Keep original header content) */}
                 <div className="analytics-title">
                     <h2>statistics</h2>
                     <div className="filter-tabs">
@@ -290,6 +594,7 @@ export default function Analytics() {
                 </div>
             )}
 
+            {/* ... (Stats Grid stays same) */}
             <div className="stats-grid">
                 {[
                     { label: 'best single', value: stats ? formatTime(stats.best) : '-', highlight: true },
@@ -303,6 +608,7 @@ export default function Analytics() {
                     { label: 'avg ao5', value: stats && stats.avgAo5 ? formatTime(stats.avgAo5) : '-' },
                     { label: 'avg ao12', value: stats && stats.avgAo12 ? formatTime(stats.avgAo12) : '-' },
                     { label: 'avg ao100', value: stats && stats.avgAo100 ? formatTime(stats.avgAo100) : '-' },
+
                     { label: 'total solves', value: stats ? stats.count : 0 },
                     { label: 'total time', value: stats ? (stats.totalTime / 1000 / 60).toFixed(1) + 'm' : '0.0m' },
                 ].map((stat, i) => (
@@ -326,7 +632,7 @@ export default function Analytics() {
             </div>
 
             <div className="charts-grid-vertical">
-                {/* Activity Heatmap */}
+                {/* Activity Heatmap (Keep same) */}
                 <div className="chart-card full-width">
                     <div className="chart-header">
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: '1rem' }}>
@@ -347,6 +653,7 @@ export default function Analytics() {
                         </div>
                     </div>
                     <div className="activity-heatmap-wrapper">
+                        {/* ... (Heatmap rendering same as before) */}
                         <div className="heatmap-labels-row">
                             <div className="heatmap-y-axis-placeholder"></div>
                             <div className="heatmap-months">
@@ -381,46 +688,154 @@ export default function Analytics() {
 
                 {/* Progression Chart */}
                 <div className="chart-card full-width">
-                    <div className="chart-header">
-                        <h3>progression</h3>
-                        <div className="time-range-selector">
-                            {['today', 'week', 'month', '3months', 'year', 'all'].map(range => (
+                    <div className="chart-header" style={{ flexWrap: 'wrap', gap: '1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '1rem', marginRight: 'auto' }}>
+                            <h3>progression</h3>
+                            {lineMode === 'trend' && stats && stats.trend !== undefined && (
+                                <span style={{
+                                    fontSize: '0.9rem',
+                                    color: stats.trend < 0 ? 'var(--text-primary)' : 'var(--error)',
+                                    fontWeight: 500,
+                                    fontFamily: 'JetBrains Mono'
+                                }}>
+                                    trend: {stats.trend > 0 ? '+' : ''}{stats.trend.toFixed(3)}s
+                                </span>
+                            )}
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                            <div className="time-range-selector">
+                                {['today', 'week', 'month', '3months', 'year', 'all'].map(range => (
+                                    <button
+                                        key={range}
+                                        className={`range-btn ${progressionTimeRange === range ? 'active' : ''}`}
+                                        onClick={() => setProgressionTimeRange(range as TimeRange)}
+                                    >
+                                        {range === '3months' ? '3m' : range}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div style={{ width: '1px', height: '24px', background: 'var(--border)', opacity: 0.5 }}></div>
+
+                            <div className="chart-toggles" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                    <button
+                                        onClick={() => setShowAo5(!showAo5)}
+                                        style={{
+                                            padding: '4px 8px',
+                                            borderRadius: '4px',
+                                            border: `1px solid ${showAo5 ? themeColors.textPrimary : 'var(--border)'}`,
+                                            background: showAo5 ? 'rgba(255,255,255,0.05)' : 'transparent',
+                                            color: showAo5 ? themeColors.textPrimary : 'var(--text-secondary)',
+                                            fontSize: '0.75rem',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        Ao5
+                                    </button>
+                                    <button
+                                        onClick={() => setShowAo12(!showAo12)}
+                                        style={{
+                                            padding: '4px 8px',
+                                            borderRadius: '4px',
+                                            border: `1px solid ${showAo12 ? themeColors.textSecondary : 'var(--border)'}`,
+                                            background: showAo12 ? 'rgba(255,255,255,0.05)' : 'transparent',
+                                            color: showAo12 ? themeColors.textSecondary : 'var(--text-secondary)',
+                                            fontSize: '0.75rem',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        Ao12
+                                    </button>
+                                    <button
+                                        onClick={() => setShowAo100(!showAo100)}
+                                        style={{
+                                            padding: '4px 8px',
+                                            borderRadius: '4px',
+                                            border: `1px solid ${showAo100 ? themeColors.border : 'var(--border)'}`,
+                                            background: showAo100 ? 'rgba(255,255,255,0.05)' : 'transparent',
+                                            color: showAo100 ? themeColors.border : 'var(--text-secondary)',
+                                            fontSize: '0.75rem',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        Ao100
+                                    </button>
+                                </div>
+
+                                <div style={{ width: '1px', height: '16px', background: 'var(--border)', margin: '0 2px' }}></div>
+
                                 <button
-                                    key={range}
-                                    className={`range-btn ${progressionTimeRange === range ? 'active' : ''}`}
-                                    onClick={() => setProgressionTimeRange(range as TimeRange)}
+                                    onClick={() => {
+                                        if (lineMode === 'none') setLineMode('trend')
+                                        else if (lineMode === 'trend') setLineMode('connect')
+                                        else setLineMode('none')
+                                    }}
+                                    style={{
+                                        padding: '4px 10px',
+                                        borderRadius: '4px',
+                                        border: `1px solid ${lineMode !== 'none' ? themeColors.accent : 'var(--border)'}`,
+                                        background: lineMode !== 'none' ? 'rgba(255,255,255,0.05)' : 'transparent',
+                                        color: lineMode !== 'none' ? themeColors.textPrimary : 'var(--text-secondary)',
+                                        fontSize: '0.75rem',
+                                        cursor: 'pointer',
+                                        minWidth: '60px',
+                                        textAlign: 'center',
+                                        transition: 'all 0.2s'
+                                    }}
                                 >
-                                    {range === '3months' ? '3m' : range}
+                                    {lineMode === 'none' ? 'points' : lineMode}
                                 </button>
-                            ))}
+
+                                <div style={{ width: '1px', height: '16px', background: 'var(--border)', margin: '0 2px' }}></div>
+
+                                <button
+                                    onClick={() => setResetCount(c => c + 1)}
+                                    style={{
+                                        padding: '4px 8px',
+                                        borderRadius: '4px',
+                                        border: '1px solid var(--border)',
+                                        background: 'transparent',
+                                        color: 'var(--text-secondary)',
+                                        fontSize: '1rem',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        height: '26px',
+                                        width: '26px',
+                                        transition: 'all 0.2s'
+                                    }}
+                                    title="Reset Zoom"
+                                >
+                                    ↺
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <div className="chart-wrapper">
                         {chartData.length > 0 ? (
                             <Plot
-                                data={[
-                                    {
-                                        x: chartData.map(d => new Date(d.timestamp)),
-                                        y: chartData.map(d => d.time),
-                                        type: 'scatter',
-                                        mode: 'lines+markers',
-                                        marker: { color: themeColors.accent, size: 4 },
-                                        line: { color: themeColors.accent, width: 2, shape: 'linear' },
-                                        fill: 'tozeroy',
-                                        fillcolor: themeColors.accent.startsWith('#')
-                                            ? `${themeColors.accent}1A`
-                                            : themeColors.accent.replace('rgb', 'rgba').replace(')', ', 0.1)'),
-                                        hovertemplate: '%{y:.2f}s<br>%{x|%b %d, %Y}<extra></extra>',
-                                    }
-                                ]}
+                                data={traces} // Updated to use dynamic traces
                                 layout={{
                                     autosize: true,
+                                    uirevision: `${progressionTimeRange}-${resetCount}`, // Preserve state unless range changes or reset clicked
                                     margin: { l: 40, r: 20, t: 20, b: 40 },
                                     paper_bgcolor: 'rgba(0,0,0,0)',
                                     plot_bgcolor: 'rgba(0,0,0,0)',
                                     font: {
                                         family: 'Inter, sans-serif',
                                         color: themeColors.textSecondary
+                                    },
+                                    hoverlabel: {
+                                        bgcolor: themeColors.bg,
+                                        bordercolor: themeColors.border,
+                                        font: { color: themeColors.textPrimary },
+                                        align: 'left'
                                     },
                                     xaxis: {
                                         gridcolor: `${themeColors.border}33`,
@@ -439,7 +854,7 @@ export default function Analytics() {
                                         tickcolor: themeColors.textSecondary,
                                         tickfont: { color: themeColors.textSecondary }
                                     },
-                                    hovermode: 'x unified',
+                                    hovermode: 'closest', // Changed from 'x unified' to allow specific point hovering
                                     showlegend: false
                                 }}
                                 config={{
@@ -447,6 +862,8 @@ export default function Analytics() {
                                     responsive: true
                                 }}
                                 style={{ width: '100%', height: '100%' }}
+                                onHover={handlePointHover}
+                                onUnhover={handlePointUnhover}
                             />
                         ) : (
                             <div className="empty-state">no data for this period</div>
@@ -454,7 +871,7 @@ export default function Analytics() {
                     </div>
                 </div>
 
-                {/* Time Distribution Chart */}
+                {/* Time Distribution Chart (Same as before) */}
                 <div className="chart-card full-width">
                     <div className="chart-header">
                         <h3>time distribution</h3>
@@ -488,40 +905,40 @@ export default function Analytics() {
                             <div className="empty-state">no data for this period</div>
                         )}
                     </div>
+                </div >
+
+                <div className="solves-list-section">
+                    <h3>all solves</h3>
+                    <div className="analytics-solves-list">
+                        {filteredSolves
+                            .slice()
+                            .sort((a, b) => b.timestamp - a.timestamp)
+                            .slice(0, visibleSolvesCount)
+                            .map((solve, i) => (
+                                <div key={solve.id} className="solve-item">
+                                    <div className="solve-left">
+                                        <span className="solve-index">{filteredSolves.length - i}</span>
+                                        <span className="solve-time">
+                                            {solve.penalty === 'DNF' ? 'DNF' : formatTime(solve.timeMs + (solve.penalty === 'plus2' ? 2000 : 0))}
+                                            {solve.penalty === 'plus2' && '+'}
+                                        </span>
+                                        <span className="solve-date">{new Date(solve.timestamp).toLocaleDateString()}</span>
+                                    </div>
+                                    <div className="solve-scramble-small">{solve.scramble}</div>
+                                </div>
+                            ))}
+                    </div>
+                    {visibleSolvesCount < filteredSolves.length && (
+                        <button
+                            className="btn ghost full-width"
+                            onClick={() => setVisibleSolvesCount(c => c + 20)}
+                            style={{ marginTop: '1rem' }}
+                        >
+                            load more
+                        </button>
+                    )}
                 </div>
             </div >
-
-            <div className="solves-list-section">
-                <h3>all solves</h3>
-                <div className="analytics-solves-list">
-                    {filteredSolves
-                        .slice()
-                        .sort((a, b) => b.timestamp - a.timestamp)
-                        .slice(0, visibleSolvesCount)
-                        .map((solve, i) => (
-                            <div key={solve.id} className="solve-item">
-                                <div className="solve-left">
-                                    <span className="solve-index">{filteredSolves.length - i}</span>
-                                    <span className="solve-time">
-                                        {solve.penalty === 'DNF' ? 'DNF' : formatTime(solve.timeMs + (solve.penalty === 'plus2' ? 2000 : 0))}
-                                        {solve.penalty === 'plus2' && '+'}
-                                    </span>
-                                    <span className="solve-date">{new Date(solve.timestamp).toLocaleDateString()}</span>
-                                </div>
-                                <div className="solve-scramble-small">{solve.scramble}</div>
-                            </div>
-                        ))}
-                </div>
-                {visibleSolvesCount < filteredSolves.length && (
-                    <button
-                        className="btn ghost full-width"
-                        onClick={() => setVisibleSolvesCount(c => c + 20)}
-                        style={{ marginTop: '1rem' }}
-                    >
-                        load more
-                    </button>
-                )}
-            </div>
-        </div >
+        </div>
     )
 }

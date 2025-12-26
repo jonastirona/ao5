@@ -17,7 +17,7 @@ function getEffectiveTime(solve: Solve): number {
   return solve.timeMs;
 }
 
-function computeTrimmedAverage(solves: Solve[], size: number): number | null {
+export function computeTrimmedAverage(solves: Solve[], size: number): number | null {
   if (solves.length < size) return null;
   
   const recent = solves.slice(-size);
