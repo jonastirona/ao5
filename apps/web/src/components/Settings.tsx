@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import ThemeSelector from './ThemeSelector'
+import PWAInstall from './Settings/PWAInstall'
 import { useStore } from '../store'
 import { useState } from 'react'
 import { exportAllSessionsToJSON, parseImport } from '../lib/importExport'
@@ -271,6 +272,10 @@ export default function Settings() {
                 <section className="settings-section full-width">
                     <h3>appearance</h3>
                     <ThemeSelector />
+                </section>
+
+                <section className="settings-section full-width">
+                    <PWAInstall />
                 </section>
             </div>
         </div>

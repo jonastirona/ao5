@@ -62,6 +62,11 @@ interface StoreState {
   /** Whether the timer is currently running */
   isTimerRunning: boolean
   
+  /** PWA Install Prompt Event */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  installPrompt: any | null
+  setInstallPrompt: (prompt: any) => void
+  
   // --- Session State ---
   /** List of all user sessions */
   sessions: Session[]
@@ -163,6 +168,10 @@ export const useStore = create<StoreState>((set, get) => ({
   currentScrambleIndex: -1,
   isKeyHeld: false,
   isTimerRunning: false,
+  
+  installPrompt: null,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  setInstallPrompt: (prompt: any) => set({ installPrompt: prompt }),
   
   sessions: [],
   currentSessionId: '',

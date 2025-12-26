@@ -32,6 +32,13 @@ function AppContent() {
   useEffect(() => {
     useAuth.getState().init()
     useStore.getState().initPresence()
+
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault()
+      useStore.getState().setInstallPrompt(e)
+    }
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
   }, [])
   const isKeyHeld = useStore(s => s.isKeyHeld)
   const isTimerRunning = useStore(s => s.isTimerRunning)
