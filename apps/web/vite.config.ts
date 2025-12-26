@@ -24,6 +24,8 @@ export default defineConfig({
         theme_color: '#011502',
         background_color: '#011502',
         display: 'standalone',
+        start_url: '/',
+        scope: '/',
         icons: [
           {
             src: 'pwa-192x192.png',
@@ -44,7 +46,8 @@ export default defineConfig({
         ]
       },
       workbox: {
-        maximumFileSizeToCacheInBytes: 8000000
+        maximumFileSizeToCacheInBytes: 8000000,
+        cleanupOutdatedCaches: true
       }
     })
   ],
