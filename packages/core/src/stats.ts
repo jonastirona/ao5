@@ -66,11 +66,6 @@ export function getBestAverage(solves: Solve[], size: number): number | null {
   if (solves.length < size) return null;
 
   let bestAverage: number | null = null;
-
-  // We need to calculate average for every window of 'size'
-  // Optimization: For large number of solves, this might be slow if done naively.
-  // But for typical cubing sessions (hundreds/thousands), O(N * size) is acceptable.
-  // Especially since we only run this on PB check (end of solve).
   
   for (let i = 0; i <= solves.length - size; i++) {
     const window = solves.slice(i, i + size);
@@ -84,4 +79,24 @@ export function getBestAverage(solves: Solve[], size: number): number | null {
   }
   
   return bestAverage;
+}
+
+export function calculateMeanOfRollingAverages(solves: Solve[], size: number): number | null {
+  if (solves.length < size) return null;
+
+  let sum = 0;
+  let count = 0;
+
+  for (let i = 0; i <= solves.length - size; i++) {
+    const window = solves.slice(i, i + size);
+    const avg = computeTrimmedAverage(window, size);
+
+    if (avg !== null && avg > 0 && avg !== -1) {
+      sum += avg;
+      count++;
+    }
+  }
+
+  if (count === 0) return null;
+  return Math.round(sum / count);
 }

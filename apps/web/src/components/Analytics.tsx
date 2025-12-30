@@ -1,6 +1,6 @@
 import { useRef, useMemo, useState, useEffect } from 'react'
 import { useStore } from '../store'
-import { SUPPORTED_EVENTS, calculateAverages, getBestAverage, computeTrimmedAverage } from 'core'
+import { SUPPORTED_EVENTS, getBestAverage, computeTrimmedAverage, calculateMeanOfRollingAverages } from 'core'
 import Plot from 'react-plotly.js'
 import ShareModal from './ShareModal'
 import {
@@ -219,7 +219,7 @@ export default function Analytics() {
             trend = slope * (endX - startX)
         }
 
-        const currentAverages = calculateAverages(validSolves)
+
         const bestAo5 = getBestAverage(validSolves, 5)
         const bestAo12 = getBestAverage(validSolves, 12)
         const bestAo100 = getBestAverage(validSolves, 100)
@@ -227,9 +227,9 @@ export default function Analytics() {
         return {
             best, worst, mean, median, stdDev, count: validSolves.length, totalTime, improvement, trend,
             bestAo5, bestAo12, bestAo100,
-            avgAo5: currentAverages.ao5,
-            avgAo12: currentAverages.ao12,
-            avgAo100: currentAverages.ao100
+            avgAo5: calculateMeanOfRollingAverages(validSolves, 5),
+            avgAo12: calculateMeanOfRollingAverages(validSolves, 12),
+            avgAo100: calculateMeanOfRollingAverages(validSolves, 100)
         }
     }, [progressionFilteredSolves])
 

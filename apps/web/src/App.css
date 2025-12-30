@@ -867,11 +867,9 @@ body {
   color: var(--text-secondary);
   font-family: 'JetBrains Mono', monospace;
   font-size: clamp(9px, min(1vw, 1vh), 12px);
-  flex-shrink: 1;
+  flex-shrink: 0;
   min-width: 0;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .solve-menu {
