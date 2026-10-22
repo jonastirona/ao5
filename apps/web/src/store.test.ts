@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { useStore } from './store'
 import { act } from 'react'
 
@@ -70,12 +70,59 @@ describe('Store', () => {
       scrambleHistory: [],
       currentScrambleIndex: 0,
       initialized: false,
+      manualTime: null,
+      timerState: 'idle',
+      isKeyHeld: false,
       ao5: null,
       ao12: null,
       ao100: null,
       best: null,
       worst: null
     })
+  })
+
+  afterEach(() => {
+    (window as unknown as { __ao5_cleanup?: () => void }).__ao5_cleanup?.()
+  })
+
+  const press = (key: string, code = key, options = {}) => {
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key, code, bubbles: true, ...options }))
+    document.body.dispatchEvent(new KeyboardEvent('keyup', { key, code, bubbles: true, ...options }))
+  }
+
+  it('records typed times for the current scramble and advances once', async () => {
+    await useStore.getState().init()
+    useStore.getState().startListening()
+    useStore.setState({ scramble: 'current scramble' })
+    for (const digit of '1234') press(digit, `Digit${digit}`)
+    expect(useStore.getState().manualTime).toBe('1234')
+    expect(useStore.getState().isKeyHeld).toBe(false)
+    press(' ', 'Space')
+    expect(useStore.getState().timerState).toBe('idle')
+    press('Enter')
+    press('Enter')
+    await Promise.resolve()
+    const state = useStore.getState()
+    expect(state.sessions[0].solves).toHaveLength(1)
+    expect(state.sessions[0].solves[0]).toMatchObject({ timeMs: 12340, scramble: 'current scramble', penalty: null })
+    expect(state.elapsedMs).toBe(12340)
+    expect(state.best).toBe(12340)
+    expect(state.manualTime).toBeNull()
+    expect(state.scramble).not.toBe('current scramble')
+  })
+
+  it('supports editing and canceling without saving, and ignores modified digits', async () => {
+    await useStore.getState().init()
+    useStore.getState().startListening()
+    press('1', 'Digit1', { ctrlKey: true })
+    expect(useStore.getState().manualTime).toBeNull()
+    press('1', 'Digit1')
+    press('2', 'Digit2')
+    press('Backspace')
+    expect(useStore.getState().manualTime).toBe('1')
+    press('Escape')
+    expect(useStore.getState().manualTime).toBeNull()
+    expect(useStore.getState().sessions[0].solves).toHaveLength(0)
   })
 
   it('should initialize with a default session', async () => {

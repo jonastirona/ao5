@@ -5,6 +5,7 @@ import { calculateAverages, getBestAverage, type Solve } from 'core'
 import { supabase } from './lib/supabaseClient'
 import { syncSolveToCloud, deleteSolveFromCloud } from './cloudSync'
 import { themes } from './themes'
+import { parseManualTime } from './lib/manualTime'
 
 export interface SolveEntry extends Solve {
   id: string
@@ -44,6 +45,8 @@ interface StoreState {
   /** Current state of the timer (idle, inspection, timing, etc.) */
   timerState: TimerState
   /** Elapsed time in milliseconds for the current solve */
+  manualTime: string | null
+  recordSolve: (ms: number, penalty?: "plus2" | "DNF") => void
   elapsedMs: number
   /** Remaining inspection time in seconds (if inspection is enabled) */
   inspectionLeft: number | null
@@ -159,6 +162,7 @@ const STORAGE_KEY = 'ao5_data'
 export const useStore = create<StoreState>((set, get) => ({
   scramble: 'Loading...',
   timerState: 'idle',
+  manualTime: null,
   elapsedMs: 0,
   inspectionLeft: null,
   timer: null,
@@ -360,6 +364,23 @@ export const useStore = create<StoreState>((set, get) => ({
       onTick: (ms: number) => set({ elapsedMs: ms }),
       onInspectionTick: (ms: number) => set({ inspectionLeft: Math.ceil(ms / 1000) }),
       onStop: (ms: number, penalty?: "plus2" | "DNF") => {
+        get().recordSolve(ms, penalty)
+      }
+    })
+
+    // Detect mobile/touch to increase hold time
+    const isTouch = typeof window !== 'undefined' && (('ontouchstart' in window) || navigator.maxTouchPoints > 0)
+    const holdDurationMs = isTouch ? 500 : 300
+
+    timer.updateSettings({
+        inspectionDurationMs: settings.inspectionDuration,
+        holdDurationMs: holdDurationMs,
+        inspectionEnabled: settings.inspectionEnabled
+    })
+    set({ timer })
+  },
+
+  recordSolve: (ms, penalty) => {
         const state = get()
         const session = state.sessions.find(s => s.id === state.currentSessionId)
         if (!session) return
@@ -419,7 +440,7 @@ export const useStore = create<StoreState>((set, get) => ({
             }
         }
 
-        const updates: Partial<StoreState> = { sessions: updatedSessions, ...stats }
+        const updates: Partial<StoreState> = { sessions: updatedSessions, elapsedMs: ms, manualTime: null, ...stats }
         if (pbTypes.length > 0) {
             updates.lastSolveWasPB = { types: pbTypes, id: Date.now().toString() }
         }
@@ -463,19 +484,6 @@ export const useStore = create<StoreState>((set, get) => ({
 
         get().nextScramble()
         get().timer?.reset()
-      }
-    })
-    
-    // Detect mobile/touch to increase hold time
-    const isTouch = typeof window !== 'undefined' && (('ontouchstart' in window) || navigator.maxTouchPoints > 0)
-    const holdDurationMs = isTouch ? 500 : 300
-    
-    timer.updateSettings({ 
-        inspectionDurationMs: settings.inspectionDuration,
-        holdDurationMs: holdDurationMs,
-        inspectionEnabled: settings.inspectionEnabled
-    })
-    set({ timer })
   },
 
   initPresence: () => {
@@ -521,6 +529,33 @@ export const useStore = create<StoreState>((set, get) => ({
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (shouldIgnore(e)) return
+
+      if (!e.altKey && !e.ctrlKey && !e.metaKey && !e.isComposing) {
+        const state = get()
+        if (state.timerState === 'idle' || state.timerState === 'stopped') {
+          if (/^[0-9]$/.test(e.key) || (state.manualTime !== null && /^[.:]$/.test(e.key))) {
+            e.preventDefault()
+            if (!e.repeat) set({ manualTime: (state.manualTime ?? '') + e.key })
+            return
+          }
+          if (state.manualTime !== null) {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              const ms = parseManualTime(state.manualTime)
+              if (!e.repeat && ms !== null) state.recordSolve(ms)
+            } else if (e.key === 'Backspace') {
+              e.preventDefault()
+              set({ manualTime: state.manualTime.slice(0, -1) || null })
+            } else if (e.key === 'Escape') {
+              e.preventDefault()
+              set({ manualTime: null })
+            }
+            // Keep space from starting the timer while a time is being edited.
+            if (e.code === 'Space') e.preventDefault()
+            return
+          }
+        }
+      }
 
       if (e.code === 'Space') {
           // Prevent scrolling
@@ -616,10 +651,11 @@ export const useStore = create<StoreState>((set, get) => ({
 
   reset: async () => {
     get().timer?.reset()
-    set({ elapsedMs: 0, inspectionLeft: null })
+    set({ elapsedMs: 0, inspectionLeft: null, manualTime: null })
   },
 
   nextScramble: async () => {
+    set({ manualTime: null })
     const state = get()
     const session = state.sessions.find(s => s.id === state.currentSessionId)
     const puzzleType = session?.puzzleType || '3x3'
@@ -644,6 +680,7 @@ export const useStore = create<StoreState>((set, get) => ({
   },
 
   previousScramble: async () => {
+    set({ manualTime: null })
     const state = get()
     if (state.currentScrambleIndex > 0) {
       const newIndex = state.currentScrambleIndex - 1
@@ -765,6 +802,7 @@ export const useStore = create<StoreState>((set, get) => ({
   },
 
   switchSession: (id: string) => {
+    set({ manualTime: null })
       console.log('[store] Switching session to:', id)
       const state = get()
       const session = state.sessions.find(s => s.id === id)

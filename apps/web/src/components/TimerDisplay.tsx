@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useStore } from '../store'
+import { formatManualTime } from '../lib/manualTime'
 
 /**
  * Formats milliseconds into a readable timer string (MM:SS.CC).
@@ -25,6 +26,7 @@ function formatMs(ms: number): string {
  */
 export default function TimerDisplay() {
   const timerState = useStore(s => s.timerState)
+  const manualTime = useStore(s => s.manualTime)
   const elapsedMs = useStore(s => s.elapsedMs)
   const inspectionLeft = useStore(s => s.inspectionLeft)
   const isKeyHeld = useStore(s => s.isKeyHeld)
@@ -60,6 +62,8 @@ export default function TimerDisplay() {
 
       // Get current state
       const state = useStore.getState()
+
+      if (state.manualTime !== null) return
 
       // Set isKeyHeld state (similar to keyboard)
       useStore.setState({ isKeyHeld: true })
@@ -152,6 +156,8 @@ export default function TimerDisplay() {
   } else if (timerState === 'idle') {
     displayValue = formatMs(elapsedMs)
   }
+
+  if (manualTime !== null) displayValue = formatManualTime(manualTime)
 
   return (
     <div
