@@ -139,8 +139,8 @@ export default function TimerDisplay() {
     }
   }, [timerState, isKeyHeld])
 
-  // Timer should be focused when key is held OR when timer is running OR during inspection
-  const shouldFocus = isKeyHeld || isTimerRunning || timerState === 'inspection'
+  // Use the enlarged timer display during timing, inspection, and manual entry.
+  const shouldFocus = manualTime !== null || isKeyHeld || isTimerRunning || timerState === 'inspection'
 
   let displayValue = formatMs(elapsedMs)
   let stateClass: string = timerState
